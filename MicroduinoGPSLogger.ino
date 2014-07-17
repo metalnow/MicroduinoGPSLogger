@@ -37,7 +37,6 @@ int file_num;				// file serial number
 int idate_cache;			// date cache
 
 #include <SD.h>
-
 File myFile;
 
 #include <Adafruit_GPS.h>
@@ -160,7 +159,47 @@ void vogps_datasdwrite()
   
   if ( file_sta ) // write date
   {
-    myFile.print("Microduino");
+    String s_timestamp="";
+  
+    for(int a=0;a<3;a++)
+    {
+      if(itime[a]<10)
+        s_timestamp+="0";
+      s_timestamp+=itime[a];
+    }
+
+    myFile.print(s_timestamp);
+    myFile.print("\t");
+    
+    myFile.print("Speed:");
+    if(STA)
+    {
+      myFile.print(i_Speed[1]);
+      myFile.print(".");
+      myFile.print(i_Speed[0]);
+    }
+    else
+    {
+      myFile.print("N/A");
+    }
+
+    myFile.print("Lat.: ");
+    myFile.print( c_lat);
+    myFile.print(" ");
+    myFile.print( f_latitude,4);
+
+    myFile.print("Lon.: ");
+    myFile.print( c_lon);
+    myFile.print(" ");
+    myFile.print(f_longitude,4);
+
+    myFile.print("ELE.:");
+    myFile.print(int(f_Height));
+
+    myFile.print("Sat.:");
+    myFile.print(i_satellites);    
+    
+    myFile.print("\n");
   }
   
 }
