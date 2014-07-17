@@ -273,6 +273,7 @@ void setup()
   
   file_sta = false;
   sd_sta = false;
+  pinMode(PIN_CS_SD, OUTPUT);
   if (SD.begin(PIN_CS_SD)) 
     sd_sta = true;
   else
