@@ -1,12 +1,16 @@
+#define Core_Plus 1
+#define GPS_RXTX_Default 0
 //==========================
 #define PIN_CS_SD 7
 //==========================
 #define init_updata 500			//gps update interval
 #define init_sdwrite 3000		//SD writing interval
-#define init_serial 5000		//SD writing interval
+#define init_serial 5000		//Serial writing interval
+#define init_oled 600			//OLED refreshing interval
 unsigned long timer = millis();
 unsigned long time_sdwrite = millis();
 unsigned long time_serial = millis();
+unsigned long time_oled = millis();
 //==========================
 boolean STA;	// GPS status
 
@@ -35,16 +39,70 @@ boolean file_updata;		// if update new GPX file
 boolean sd_sta,file_sta;	//SD card status, file status
 int file_num;				// file serial number
 
-int idate_cache;			// date cache
+//oled=======================================
+#include <U8glib.h>
+U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE);	// HW SPI Com: CS = 10, A0 = 9 (Hardware Pins are  SCK = 13 and MOSI = 11)
 
+//-------Font size: large, midium, small
+#define setFont_L u8g.setFont(u8g_font_courB14)
+#define setFont_M u8g.setFont(u8g_font_fixed_v0r)
+#define setFont_S u8g.setFont(u8g_font_chikitar)
+/*
+font:
+ u8g.setFont(u8g_font_7x13)
+ u8g.setFont(u8g_font_fixed_v0r);
+ u8g.setFont(u8g_font_chikitar);
+ u8g.setFont(u8g_font_osb21);
+ */
+
+#define u8g_logo_width 128
+#define u8g_logo_height 18
+
+const unsigned char u8g_logo_bits[] U8G_PROGMEM =
+{
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x01, 0xE0,
+  0x03, 0x00, 0x00, 0x00, 0x00, 0x7E, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00,
+  0x00, 0xFE, 0xF9, 0xF7, 0x07, 0x00, 0x00, 0x00, 0x00, 0x3C, 0x00, 0xF8,
+  0x03, 0x00, 0x00, 0x00, 0x00, 0xFC, 0xF9, 0xE1, 0x03, 0x00, 0x00, 0x00,
+  0x00, 0x38, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFC, 0xFF, 0x01,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0xFC, 0xEF, 0xF9, 0x8F, 0xD7, 0x73, 0xF1, 0xC1, 0x3B, 0x9F, 0xFF,
+  0xFF, 0x1E, 0x3E, 0x00, 0x00, 0xBC, 0xEF, 0xC1, 0xE1, 0x9F, 0xFF, 0xDD,
+  0xE3, 0x3F, 0xCC, 0xE1, 0xF0, 0xBF, 0x7B, 0x00, 0x00, 0x3C, 0xF7, 0xE1,
+  0xE1, 0x9F, 0xFF, 0xC6, 0xF7, 0x3E, 0x8E, 0xF3, 0xF0, 0xFF, 0xF8, 0x00,
+  0x00, 0x3C, 0xF3, 0xE1, 0xF1, 0x93, 0xFF, 0xE6, 0xF7, 0x3C, 0x8F, 0xF7,
+  0xF0, 0xFF, 0xFC, 0x00, 0x00, 0x7C, 0xF2, 0xE1, 0xF1, 0x83, 0x87, 0xFE,
+  0xF7, 0x39, 0xFF, 0xF7, 0xF0, 0xFF, 0xFF, 0x00, 0x00, 0x7C, 0xF0, 0xE3,
+  0xF3, 0xA3, 0x03, 0xFE, 0xF7, 0x3F, 0xFF, 0xF7, 0x71, 0xFC, 0xFF, 0x00,
+  0x00, 0x7C, 0xF8, 0xE3, 0xF3, 0xBF, 0x03, 0xFE, 0xE3, 0x3F, 0xFF, 0xF3,
+  0x71, 0xDC, 0x7F, 0x00, 0x00, 0x7E, 0xFC, 0xE7, 0xE3, 0xBF, 0x03, 0xFC,
+  0xE3, 0x3F, 0xFE, 0xF3, 0x71, 0x9C, 0x7F, 0x00, 0x00, 0xC1, 0x03, 0xF8,
+  0xCF, 0xE7, 0x0F, 0xF0, 0x00, 0x7F, 0xFC, 0xFC, 0xFF, 0x3E, 0x1E, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+//==========================
 #include <SD.h>
 File myFile;
 
+//==========================
 #include <Adafruit_GPS.h>
-#include <SoftwareSerial.h>
-//SoftwareSerial mySerial(3, 2);
-//Adafruit_GPS GPS(&mySerial);
-Adafruit_GPS GPS(&Serial1);
+#if GPS_RXTX_Default
+  Adafruit_GPS GPS(&Serial);
+#else
+  #if Core_Plus
+    Adafruit_GPS GPS(&Serial1);
+  #else
+    #include <SoftwareSerial.h>
+    SoftwareSerial mySerial(3, 2);
+    Adafruit_GPS GPS(&mySerial);
+  #endif
+#endif
 
 //lat_lon_transform================================
 void lat_lon_transform()
@@ -137,7 +195,104 @@ void vogps_dataread()
   }
 }
 
-void vogps_datasdwrite()
+//OLED===================================================
+void vooled()
+{
+  if (time_oled > millis()) time_oled = millis();
+  if(millis()-time_oled>init_oled)
+  {
+    u8g.firstPage();
+    do
+    {
+      draw();
+    }
+    while( u8g.nextPage() );
+    time_oled=millis();
+  }
+}
+
+void volcdlogo(unsigned int x, unsigned int y)
+{
+  u8g.firstPage();
+  do
+  {
+    u8g.drawXBMP( x, y, u8g_logo_width, u8g_logo_height, u8g_logo_bits);
+  }
+  while( u8g.nextPage() );
+}
+
+void draw(void)
+{
+  setFont_L;
+
+  u8g.setPrintPos(2, 18);
+
+  u8g.print("Speed:");
+  if(STA)
+  {
+    u8g.print(i_Speed[1]);
+    setFont_M;
+    u8g.print(".");
+    u8g.print(i_Speed[0]);
+  }
+  else
+  {
+    u8g.print("N/A");
+    setFont_M;
+  }
+
+  u8g.setPrintPos(2, 32);
+  u8g.print("Lat.: ");
+  u8g.print( c_lat);
+  u8g.print(" ");
+  u8g.print( f_latitude,4);
+
+  u8g.setPrintPos(2, 41);
+  u8g.print("Lon.: ");
+  u8g.print( c_lon);
+  u8g.print(" ");
+  u8g.print(f_longitude,4);
+
+
+  u8g.drawLine(0, 44, 128, 44);
+
+  u8g.drawLine(0, 55, 128, 55);
+
+  u8g.setPrintPos(2, 53);
+      u8g.print("20");
+      u8g.print(idate[0]);
+      u8g.print("-");
+      u8g.print(idate[1]);
+      u8g.print("-");
+      u8g.print(idate[2]);
+
+      u8g.print("  ");
+      u8g.print(itime[0]);
+      u8g.print(":");
+      u8g.print(itime[1]);
+      u8g.print(":");
+      u8g.print(itime[2]);
+
+  for(int a=0;a<3;a++)
+  {
+    u8g.drawFrame(2+(5*a), 61-(a*2), 4, 3+(a*2));
+  }
+  for(int a=0;a<f_fixquality+1;a++)
+  {
+    u8g.drawBox(2+(5*a), 61-(a*2), 4, 3+(a*2));
+  }
+
+  u8g.setPrintPos(72, 64);
+  u8g.print("ELE.:");
+  u8g.print(int(f_Height));
+
+  u8g.setPrintPos(20, 64);
+  u8g.print("Sat.:");
+  u8g.print(i_satellites);
+}
+
+//SD Card===================================================
+void vosdwrite()
 {
   if (time_sdwrite > millis()) time_sdwrite = millis();
   if (millis() - time_sdwrite <= init_sdwrite)
@@ -224,7 +379,8 @@ void vogps_datasdwrite()
   
 }
 
-void vogps_serial()
+//Serail===================================================
+void voserial()
 {
   if (time_serial > millis()) time_serial = millis();
   if (millis() - time_serial <= init_serial)
@@ -289,8 +445,11 @@ void loop()
 
   vogps_dataread();
 
-  vogps_datasdwrite();
+  vosdwrite();
   
-  vogps_serial();
+  voserial();
+  
+  //OLED-------------------------------
+  vooled();  
 }
 
