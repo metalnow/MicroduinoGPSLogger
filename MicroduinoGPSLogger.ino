@@ -89,7 +89,8 @@ const unsigned char u8g_logo_bits[] U8G_PROGMEM =
 //==========================
 #include <SD.h>
 File myFile;
-
+#include <GPX.h>
+GPX myGPX;
 //==========================
 #include <Adafruit_GPS.h>
 #if GPS_RXTX_Default
@@ -119,6 +120,7 @@ void lat_lon_transform()
 }
 
 // FileName_StringtoChar================================
+// create a new file name with date from gps
 void vostring()
 {
   String s_file_name="";
@@ -196,6 +198,7 @@ void vogps_dataread()
 }
 
 //OLED===================================================
+int key_up,key_down;
 void vooled()
 {
   if (time_oled > millis()) time_oled = millis();
@@ -291,7 +294,57 @@ void draw(void)
   u8g.print(i_satellites);
 }
 
+void voCubeV1Key()
+{
+  int button = analogRead(A7);
+  int button_down = analogRead(A6);
+  if(button_down>500&&button_down<600)
+    key_down=1;
+  else if(button_down>600&&button_down<700)
+    key_down=2;
+  else
+    key_down=0;
+  if(button<40)
+    key_up=2;
+  else if(button>50&&button<100) 
+    key_up=4;
+  else if(button>145&&button<155) 
+    key_up=1;
+  else if(button>240&&button<250) 
+    key_up=5;
+  else if(button>380&&button<400) 
+    key_up=3;
+  else
+    key_up=0;   
+  Serial.print("key status: ");    
+  Serial.print(key_up);
+  Serial.print(", ");    
+  Serial.println(key_down);    
+  delay(100);  
+}  
+
 //SD Card===================================================
+#define   WRDELAY        10
+void openElement(){
+  myFile.print(myGPX.getOpen());
+  delay(WRDELAY);
+  myFile.print(myGPX.getTrakOpen());
+  delay(WRDELAY);
+  myFile.print(myGPX.getTrakSegOpen());  
+  
+//  if (myFile.writeError || !myFile.sync()) error ("print or sync");
+}
+
+void closeElement(){
+  myFile.print(myGPX.getTrakSegClose());
+  delay(WRDELAY);
+  myFile.print(myGPX.getTrakClose());
+  delay(WRDELAY);
+  myFile.print(myGPX.getClose());
+  
+//  if (file.writeError || !file.sync()) error ("print or sync");
+}
+
 void vosdwrite()
 {
   if (time_sdwrite > millis()) time_sdwrite = millis();
@@ -317,6 +370,7 @@ void vosdwrite()
     if (myFile)
     {
       file_sta = true;
+      openElement();
       myFile.close();
     }
     else
@@ -328,52 +382,35 @@ void vosdwrite()
   if ( file_sta ) // write date
   {
     myFile = SD.open(file_name, FILE_WRITE);
-    
-    String s_timestamp="";
   
-    for(int a=0;a<4;a++)
-    {
-      if(itime[a]<10)
-        s_timestamp+="0";
-      s_timestamp+=itime[a];
-    }
-
-    myFile.print(s_timestamp);
-    myFile.print("\t");
+    char* stmp;    
     
-    myFile.print("Speed:");
-    if(STA)
-    {
-      myFile.print(i_Speed[1]);
-      myFile.print(".");
-      myFile.print(i_Speed[0]);
-    }
-    else
-    {
-      myFile.print("N/A");
-    }
-    myFile.print("\t");
+    //Elevation
+    myGPX.setEle(String(int(f_Height)));
+
+    // Set lon, lat and get track data
+    char flatBuffer[20]; //buffer for dtostrf() to use
+    char flonBuffer[20]; //buffer for dtostrf() to use
+    dtostrf(f_latitude, 10, 6, flatBuffer); //Convert Latitude to a char array
+    dtostrf(f_longitude, 10, 6, flonBuffer); //Convert Latitude to a char array
+    stmp=(char*)malloc(sizeof(char)*40);
+    if (myGPX.getPt(stmp, flonBuffer, flatBuffer))
+      myFile.print(stmp);
+    free(stmp);    
     
-    myFile.print("Lat.: ");
-    myFile.print( c_lat);
-    myFile.print(" ");
-    myFile.print( f_latitude,8);
-    myFile.print("\t");
-
-    myFile.print("Lon.: ");
-    myFile.print( c_lon);
-    myFile.print(" ");
-    myFile.print(f_longitude,8);
-    myFile.print("\t");
-
-    myFile.print("ELE.:");
-    myFile.print(int(f_Height));
-    myFile.print("\t");
-
-    myFile.print("Sat.:");
-    myFile.print(i_satellites);    
+    //Date/Time    
+    stmp=(char*)malloc(sizeof(char)*42);
+    sprintf_P(stmp,PSTR("<time>20%2.i-%0.2i-%0.2iT%0.2i:%0.2i:%0.2i.%0.2i+00:00</time>"),idate[0],idate[1],idate[2],itime[0],itime[1],itime[2],itime[3]);
+    myFile.print(stmp);
+    free(stmp);    
     
-    myFile.print("\n");
+    //Speed
+    stmp = (char*)malloc(sizeof(unsigned long));
+    sprintf_P(stmp,PSTR("%d.%d"),i_Speed[1],i_Speed[0]);   
+    myGPX.setDesc(stmp);
+    myFile.print(myGPX.getInfo());
+    free(stmp);    
+
     myFile.close();
   }
   
@@ -436,6 +473,8 @@ void setup()
     Serial.println("sd card initialization failed");
   
   delay(2000);
+  volcdlogo(0,0);
+  delay(1000);
 }
 
 void loop()
@@ -451,5 +490,6 @@ void loop()
   
   //OLED-------------------------------
   vooled();  
+  voCubeV1Key();
 }
 
