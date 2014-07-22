@@ -381,36 +381,29 @@ void vosdwrite()
   
   if ( file_sta ) // write date
   {
-    myFile = SD.open(file_name, FILE_WRITE);
-  
-    char* stmp;    
+    myFile = SD.open(file_name, FILE_WRITE);  
     
     //Elevation
     myGPX.setEle(String(int(f_Height)));
+
+    //Speed
+    String speed = String(i_Speed[1]) + "." + String(i_Speed[0]);
+    myGPX.setSpeed(speed);
+
+    //Date/Time
+    char* stmp;    
+    stmp=(char*)malloc(sizeof(char)*42);
+    sprintf_P(stmp,PSTR("20%2.i-%0.2i-%0.2iT%0.2i:%0.2i:%0.2i.%0.2i+00:00"),idate[0],idate[1],idate[2],itime[0],itime[1],itime[2],itime[3]);
+    myGPX.setTime(stmp);
 
     // Set lon, lat and get track data
     char flatBuffer[20]; //buffer for dtostrf() to use
     char flonBuffer[20]; //buffer for dtostrf() to use
     dtostrf(f_latitude, 10, 6, flatBuffer); //Convert Latitude to a char array
     dtostrf(f_longitude, 10, 6, flonBuffer); //Convert Latitude to a char array
-    stmp=(char*)malloc(sizeof(char)*40);
-    if (myGPX.getPt(stmp, flonBuffer, flatBuffer))
-      myFile.print(stmp);
-    free(stmp);    
+    myFile.print(myGPX.getPt(GPX_TRKPT, flonBuffer, flatBuffer));      
     
-    //Date/Time    
-    stmp=(char*)malloc(sizeof(char)*42);
-    sprintf_P(stmp,PSTR("<time>20%2.i-%0.2i-%0.2iT%0.2i:%0.2i:%0.2i.%0.2i+00:00</time>"),idate[0],idate[1],idate[2],itime[0],itime[1],itime[2],itime[3]);
-    myFile.print(stmp);
     free(stmp);    
-    
-    //Speed
-    stmp = (char*)malloc(sizeof(unsigned long));
-    sprintf_P(stmp,PSTR("%d.%d"),i_Speed[1],i_Speed[0]);   
-    myGPX.setDesc(stmp);
-    myFile.print(myGPX.getInfo());
-    free(stmp);    
-
     myFile.close();
   }
   
