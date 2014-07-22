@@ -325,6 +325,40 @@ void voCubeV1Key()
 
 //SD Card===================================================
 #define   WRDELAY        10
+#define TmpFileName "GpsTmpFile.tmp"
+void checkLastTimeFileStatus()
+{
+  if (SD.exists(TmpFileName))
+  {
+    File file = SD.open(TmpFileName);
+    if (file)
+    {
+      char tmp[num_name];
+      tmp[0] = '\0';
+      char * pTmp = tmp;
+      while (file.available()) 
+      {
+        *(pTmp++) = file.read();
+      }
+      *pTmp = 0;
+      file.close();      
+    }
+    
+    //write end tag
+    if ( tmp[0] != '\0')
+    {
+      myFile = SD.open(tmp, FILE_WRITE);    
+      if (myFile)
+      {
+        closeElement();
+        myFile.close();      
+      }    
+    }
+    
+    SD.remove(TmpFileName);
+  }  
+}
+
 void openElement(){
   myFile.print(myGPX.getOpen());
   delay(WRDELAY);
@@ -359,8 +393,7 @@ void vosdwrite()
   if ( !file_sta )
   {
     if ( !STA )
-      return;
-      
+      return;    
     do
     {
       vostring();
@@ -372,6 +405,13 @@ void vosdwrite()
       file_sta = true;
       openElement();
       myFile.close();
+      
+      File file = SD.open(TmpFileName, FILE_WRITE);
+      if (file)
+      {
+        file.print(file_name);
+        file.close();
+      }
     }
     else
     {
@@ -464,7 +504,9 @@ void setup()
     sd_sta = true;
   else
     Serial.println("sd card initialization failed");
-  
+  if (sd_sta)
+    checkLastTimeFileStatus();
+    
   delay(2000);
   volcdlogo(0,0);
   delay(1000);
