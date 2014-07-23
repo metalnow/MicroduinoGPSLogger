@@ -7,10 +7,12 @@
 #define init_sdwrite 3000		//SD writing interval
 #define init_serial 5000		//Serial writing interval
 #define init_oled 600			//OLED refreshing interval
+#define init_key 100			//OLED refreshing interval
 unsigned long timer = millis();
 unsigned long time_sdwrite = millis();
 unsigned long time_serial = millis();
 unsigned long time_oled = millis();
+unsigned long time_key = millis();
 //==========================
 boolean STA;	// GPS status
 
@@ -296,31 +298,41 @@ void draw(void)
 
 void voCubeV1Key()
 {
-  int button = analogRead(A7);
-  int button_down = analogRead(A6);
-  if(button_down>500&&button_down<600)
-    key_down=1;
-  else if(button_down>600&&button_down<700)
-    key_down=2;
-  else
-    key_down=0;
-  if(button<40)
-    key_up=2;
-  else if(button>50&&button<100) 
-    key_up=4;
-  else if(button>145&&button<155) 
-    key_up=1;
-  else if(button>240&&button<250) 
-    key_up=5;
-  else if(button>380&&button<400) 
-    key_up=3;
-  else
-    key_up=0;   
-  Serial.print("key status: ");    
-  Serial.print(key_up);
-  Serial.print(", ");    
-  Serial.println(key_down);    
-  delay(100);  
+  if (time_key > millis()) time_key = millis();
+  if(millis()-time_key>init_key)
+  {  
+    int button2 = analogRead(A6);
+    if(button2>370&&button2<380)
+      key_down=1;  // single
+    else if(button2>240&&button2<250)
+      key_down=2;  // double
+    else
+      key_down=0;
+    
+    int button5 = analogRead(A7);
+    if(button5<40)  //left
+      key_up=2;
+    else if(button5>50&&button5<100) // right
+      key_up=4;
+    else if(button5>140&&button5<155) // up
+      key_up=1;
+    else if(button5>230&&button5<250) // down
+      key_up=5;
+    else if(button5>370&&button5<400) // middle
+      key_up=3;
+    else
+      key_up=0;   
+      
+    if ( key_up != 0 || key_down!= 0 )
+    {
+      Serial.print("key status: ");    
+      Serial.print(key_up);
+      Serial.print(", ");
+      Serial.println(key_down);    
+      delay(100);
+    }
+        
+  }
 }  
 
 //SD Card===================================================
@@ -524,7 +536,8 @@ void loop()
   voserial();
   
   //OLED-------------------------------
-  vooled();  
+  if ( STA )
+    vooled();  
   voCubeV1Key();
 }
 
