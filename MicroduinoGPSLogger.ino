@@ -1,3 +1,5 @@
+#include <ArduinoMAVLink.h>
+//==========================
 #define Core_Plus 1
 #define GPS_RXTX_Default 0
 //==========================
@@ -330,10 +332,10 @@ void checkLastTimeFileStatus()
 {
   if (SD.exists(TmpFileName))
   {
+    char tmp[num_name];
     File file = SD.open(TmpFileName);
     if (file)
     {
-      char tmp[num_name];
       tmp[0] = '\0';
       char * pTmp = tmp;
       while (file.available()) 

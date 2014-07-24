@@ -1,23 +1,15 @@
-#include <SoftwareSerial.h>
-
-// Arduino MAVLink test code.
-
-//#include <FastSerial.h>
-#include "../mavlink/include/mavlink.h"        // Mavlink interface
-
-SoftwareSerial mySerial(2, 3);
-//FastSerialPort0(mySerial);
+#include "ArduinoMAVLink.h"
+#include "include/mavlink/v1.0/common/mavlink.h"        // Mavlink interface
 
 
-
-void setup() {
-    mySerial.begin(57600);
-        Serial.begin(9600);
-       
+ArduinoMAVLink::ArduinoMAVLink(SoftwareSerial * serial)
+{
+  _serial = serial;
 }
 
+/*
 void loop() {
-        /* The default UART header for your MCU */ 
+        // The default UART header for your MCU 
  int sysid = 20;                   ///< ID 20 for this airplane
     int compid = MAV_COMP_ID_IMU;     ///< The component sending the message is the IMU, it could be also a Linux process
     int type = MAV_TYPE_QUADROTOR;   ///< This system is an airplane / fixed wing
@@ -46,43 +38,45 @@ void loop() {
      mySerial.write(buf, len);
      comm_receive();
 }
+*/
 
-void comm_receive() {
- 
-       mavlink_message_t msg;
-	mavlink_status_t status;
- 
-	// COMMUNICATION THROUGH EXTERNAL UART PORT (XBee serial)
- 
-	while(mySerial.available() > 0 ) 
-	{
-		uint8_t c = mySerial.read();
-		// Try to get a new message
-		if(mavlink_parse_char(MAVLINK_COMM_0, c, &msg, &status)) {
-			// Handle message
- 
-			switch(msg.msgid)
-			{
-			case MAVLINK_MSG_ID_HEARTBEAT:
-			{
-				  // E.g. read GCS heartbeat and go into
-                                // comm lost mode if timer times out
-			        }
-			        break;
-  			case MAVLINK_MSG_ID_COMMAND_LONG:
-				// EXECUTE ACTION
-				break;
-			default:
-				//Do nothing
-				break;
-			}
-		}
-                Serial.println(c);
- 
-		// And get the next one
-	}
+
+void ArduinoMAVLink::comm_receive() 
+{
+/* 
+  mavlink_message_t msg;
+  mavlink_status_t status;
+  
+  // COMMUNICATION THROUGH EXTERNAL UART PORT (XBee serial)
+  
+  while(mySerial.available() > 0 ) 
+  {
+    uint8_t c = _serial->read();
+    // Try to get a new message
+    if(mavlink_parse_char(MAVLINK_COMM_0, c, &msg, &status)) {
+    // Handle message
+    
+      switch(msg.msgid)
+      {
+        case MAVLINK_MSG_ID_HEARTBEAT:
+        {
+          // E.g. read GCS heartbeat and go into
+          // comm lost mode if timer times out
+        }
+        break;
+        case MAVLINK_MSG_ID_COMMAND_LONG:
+        // EXECUTE ACTION
+        break;
+        default:
+        //Do nothing
+        break;
+      }
+    }
+    // And get the next one
+  }
+*/  
 }
-       
+
        
        
 
