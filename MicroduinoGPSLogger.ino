@@ -8,10 +8,12 @@
 #define init_sdwrite 3000		//SD writing interval
 #define init_serial 5000		//Serial writing interval
 #define init_oled 600			//OLED refreshing interval
+#define init_key 100			//OLED refreshing interval
 unsigned long timer = millis();
 unsigned long time_sdwrite = millis();
 unsigned long time_serial = millis();
 unsigned long time_oled = millis();
+unsigned long time_key = millis();
 //==========================
 boolean STA;	// GPS status
 
@@ -45,9 +47,9 @@ int file_num;				// file serial number
 U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE);	// HW SPI Com: CS = 10, A0 = 9 (Hardware Pins are  SCK = 13 and MOSI = 11)
 
 //-------Font size: large, midium, small
-#define setFont_L u8g.setFont(u8g_font_courB14)
-#define setFont_M u8g.setFont(u8g_font_fixed_v0r)
-#define setFont_S u8g.setFont(u8g_font_chikitar)
+#define setFont_L u8g.setFont(u8g_font_courB14)    // 11 pixel height,Font Bounding box     w=17 h=26 x=-4 y=-7
+#define setFont_M u8g.setFont(u8g_font_fixed_v0r)  // 7 pixel height, Font Bounding box     w= 7 h= 9 x= 0 y=-2
+#define setFont_S u8g.setFont(u8g_font_chikitar)   // 5 pixel height, Font Bounding box     w= 9 h=10 x= 0 y=-2
 /*
 font:
  u8g.setFont(u8g_font_7x13)
@@ -240,12 +242,17 @@ void volcdlogo(unsigned int x, unsigned int y)
   while( u8g.nextPage() );
 }
 
+void volcdPrintText( char * text )
+{
+  setFont_L;
+  u8g.setPrintPos(2, 18);
+  u8g.print(text);
+}
+
 void GPSDraw(void)
 {
   setFont_L;
-
   u8g.setPrintPos(2, 18);
-
   u8g.print("Speed:");
   if(STA)
   {
@@ -278,19 +285,19 @@ void GPSDraw(void)
   u8g.drawLine(0, 55, 128, 55);
 
   u8g.setPrintPos(2, 53);
-      u8g.print("20");
-      u8g.print(idate[0]);
-      u8g.print("-");
-      u8g.print(idate[1]);
-      u8g.print("-");
-      u8g.print(idate[2]);
+  u8g.print("20");
+  u8g.print(idate[0]);
+  u8g.print("-");
+  u8g.print(idate[1]);
+  u8g.print("-");
+  u8g.print(idate[2]);
 
-      u8g.print("  ");
-      u8g.print(itime[0]);
-      u8g.print(":");
-      u8g.print(itime[1]);
-      u8g.print(":");
-      u8g.print(itime[2]);
+  u8g.print("  ");
+  u8g.print(itime[0]);
+  u8g.print(":");
+  u8g.print(itime[1]);
+  u8g.print(":");
+  u8g.print(itime[2]);
 
   for(int a=0;a<3;a++)
   {
@@ -310,44 +317,51 @@ void GPSDraw(void)
   u8g.print(i_satellites);
 }
 
-uint8_t key_up,key_down;
 #define KEY_NONE   0
-#define KEY_PREV   1
-#define KEY_NEXT   2
+#define KEY_LEFT   1
+#define KEY_RIGHT  2
 #define KEY_SELECT 3
-#define KEY_BACK   4
-#define KEY_SINGLE 5
-#define KEY_DOUBLE 6
+#define KEY_UP     4
+#define KEY_DOWN   5
+#define KEY_SINGLE 6
+#define KEY_DOUBLE 7
+#define KEY_PREV   KEY_LEFT
+#define KEY_NEXT   KEY_RIGHT
 
 uint8_t uiKeyCodeFirst = KEY_NONE;
 uint8_t uiKeyCodeSecond = KEY_NONE;
 uint8_t uiKeyCode = KEY_NONE;
 void voCubeV1Key()
 {
-  uiKeyCodeSecond = uiKeyCodeFirst;
-  uint8_t button_down = analogRead(A6);
-  if(button_down>370&&button_down<380)
-    uiKeyCodeFirst=KEY_SINGLE;
-  else if(button_down>240&&button_down<250)
-    uiKeyCodeFirst=KEY_DOUBLE;
-  uint8_t button = analogRead(A7);    
-  if(button<40)
-    uiKeyCodeFirst=2;
-  else if(button>50&&button<100) 
-    uiKeyCodeFirst=4;
-  else if(button>140&&button<155) 
-    uiKeyCodeFirst=1;
-  else if(button>230&&button<250) 
-    uiKeyCodeFirst=5;
-  else if(button>370&&button<400) 
-    uiKeyCodeFirst=3;
-  else
-    uiKeyCodeFirst=KEY_NONE;   
-  Serial.print("key status: ");    
-  Serial.print(key_up);
-  Serial.print(", ");    
-  Serial.println(key_down);    
-  delay(100);  
+  if (time_key > millis()) time_key = millis();
+  if(millis()-time_key>init_key)
+  {  
+    uiKeyCodeSecond = uiKeyCodeFirst;
+    int button2 = analogRead(A6);
+    if(button2>370&&button2<380)
+      uiKeyCodeFirst=KEY_SINGLE;  // single
+    else if(button2>240&&button2<250)
+      uiKeyCodeFirst=KEY_DOUBLE;  // double
+    
+    int button5 = analogRead(A7);
+    if(button5<40)  //left
+      uiKeyCodeFirst=KEY_LEFT;
+    else if(button5>50&&button5<100) // right
+      uiKeyCodeFirst=KEY_RIGHT;
+    else if(button5>140&&button5<155) // up
+      uiKeyCodeFirst=KEY_UP;
+    else if(button5>230&&button5<250) // down
+      uiKeyCodeFirst=KEY_DOWN;
+    else if(button5>370&&button5<400) // middle
+      uiKeyCodeFirst=KEY_SELECT;
+    else
+      uiKeyCodeFirst=KEY_NONE;   
+      
+    if ( uiKeyCodeSecond == uiKeyCodeFirst )
+      uiKeyCode = uiKeyCodeFirst;
+    else
+      uiKeyCode = KEY_NONE;        
+  }
 }  
 
 //SD Card===================================================
@@ -358,10 +372,10 @@ void checkLastTimeFileStatus()
   if (SD.exists(TmpFileName))
   {
     char tmp[num_name];
+    tmp[0] = '\0';
     File file = SD.open(TmpFileName);
     if (file)
     {
-      tmp[0] = '\0';
       char * pTmp = tmp;
       while (file.available()) 
       {
@@ -519,10 +533,176 @@ void voserial()
   Serial.print("\n");
 }
 
+//Menus ===================================================
+#define STAGE_NONE 0
+#define STAGE_INIT 1
+#define STAGE_MENU 2
+#define STAGE_GPS  3  // 
+#define STAGE_CFG  4  // config
+#define STAGE_APM  5  // amp control
+#define STAGE_ABT  6  // about
+
+uint8_t SysStage = STAGE_NONE;
+uint8_t LastSysStage = STAGE_NONE;
+
+boolean noSTA_draw = true;
+
+#define MENU_ITEMS 4
+#define MENU_GPS  0 
+#define MENU_APM  1 
+#define MENU_CFG  2 
+#define MENU_ABT  3 
+char *menu_strings[MENU_ITEMS] = { "GPS Status", "APM Planner", "Config", "About" };
+uint8_t menu_current = 0;
+uint8_t menu_redraw_required = 0;
+uint8_t last_key_code = KEY_NONE;
+
+void drawMenu() 
+{
+  uint8_t i, h;
+  u8g_uint_t w, d;
+
+  u8g.setFont(u8g_font_6x13);
+  u8g.setFontRefHeightText();
+  u8g.setFontPosTop();
+  
+  h = u8g.getFontAscent()-u8g.getFontDescent();
+  w = u8g.getWidth();
+  for( i = 0; i < MENU_ITEMS; i++ ) {
+    d = (w-u8g.getStrWidth(menu_strings[i]))/2;
+    u8g.setDefaultForegroundColor();
+    if ( i == menu_current ) {
+      u8g.drawBox(0, i*h+1, w, h);
+      u8g.setDefaultBackgroundColor();
+    }
+    u8g.drawStr(d, i*h, menu_strings[i]);
+  }
+}
+
+void prevBtn()
+{
+  boolean back2Menu = false;
+  switch(SysStage)
+  {
+    case STAGE_GPS:
+      menu_current = MENU_GPS;
+      back2Menu = true;
+    break;      
+    case STAGE_CFG:
+      menu_current = MENU_CFG;
+      back2Menu = true;
+    break;      
+    case STAGE_APM:
+      menu_current = MENU_APM;   
+      back2Menu = true; 
+    break;      
+    case STAGE_ABT:
+      menu_current = MENU_ABT;    
+      back2Menu = true;
+    break;
+    default:
+    break;
+  }
+  if ( back2Menu )
+    setNextSysStage(LastSysStage);
+
+}
+
+void nextBtn()
+{
+  if ( SysStage == STAGE_MENU )
+  {
+    switch(menu_current)
+    {
+      case MENU_GPS:
+        noSTA_draw = true;
+        setNextSysStage(STAGE_GPS);
+      break;
+      case MENU_APM:
+        setNextSysStage(STAGE_APM);
+      break;
+      case MENU_CFG:
+        setNextSysStage(STAGE_CFG);
+      break;
+      case MENU_ABT:
+        setNextSysStage(STAGE_ABT);
+      break;
+    }
+  }
+}
+
+void selectBtn()
+{
+  if ( SysStage == STAGE_MENU )
+    nextBtn();
+}
+
+void updateMenu() 
+{
+  if ( uiKeyCode != KEY_NONE && last_key_code == uiKeyCode ) 
+  {
+    return;
+  }
+  last_key_code = uiKeyCode;
+  
+  switch ( uiKeyCode ) 
+  {
+    case KEY_DOWN:
+      menu_current++;
+      if ( menu_current >= MENU_ITEMS )
+        menu_current = 0;
+      menu_redraw_required = 1;
+      break;
+    case KEY_UP:
+      if ( menu_current <= 0 )
+        menu_current = MENU_ITEMS;
+      menu_current--;
+      menu_redraw_required = 1;
+      break;
+    case KEY_PREV:
+      prevBtn();
+      break;
+    case KEY_NEXT:
+      nextBtn();
+      break;
+    case KEY_SELECT:
+      selectBtn();
+      break;
+  }
+}
+
+//===================================================
+void MAVLinkStatusReport(uint8_t status, uint32_t msg)
+{
+  setFont_L;
+  u8g.setPrintPos(2, 18);
+  if ( status == ML_INITIAL )
+  {
+    u8g.print("Init MAVLink.");  
+    setFont_M;
+    u8g.setPrintPos(2, 32);
+    u8g.print("Elapsed Time: ");
+    u8g.print(msg);
+  }
+    
+  
+  
+}
+
+void setNextSysStage( uint8_t next )
+{
+  LastSysStage = SysStage;
+  SysStage = next;
+  menu_redraw_required = 1;  
+}
+
 void setup()
 {
+  setNextSysStage(STAGE_INIT);
   Serial.begin(57600);
   GPS.begin(38400);
+  mavLink.begin(57600);
+  mavLink.SetStatusCallback(MAVLinkStatusReport);
   
   file_sta = false;
   sd_sta = false;
@@ -534,13 +714,70 @@ void setup()
   if (sd_sta)
     checkLastTimeFileStatus();
     
-  delay(2000);
+  delay(1000);
   volcdlogo(0,0);
   delay(1000);
+  if ( mavLink.Initialize() )
+  {
+    setFont_L;
+    u8g.setPrintPos(2, 18);
+    u8g.print("Init MAVLink Success.");          
+  }
+  else
+  {
+    setFont_L;
+    u8g.setPrintPos(2, 18);
+    u8g.print("Init MAVLink Failed.");      
+  }
+  setFont_S;
+  u8g.setPrintPos(2, 64);
+  u8g.print("press any key to continue...");  
+  delay(500);
 }
 
 void loop()
 {
+  voCubeV1Key();
+  if ( SysStage == STAGE_INIT )
+  {
+    if ( uiKeyCode != KEY_NONE )
+        setNextSysStage(STAGE_MENU);
+  }
+  else if ( SysStage == STAGE_MENU )
+  {
+    if (  menu_redraw_required != 0 ) 
+    {
+      u8g.firstPage();
+      do  {
+        drawMenu();
+      } while( u8g.nextPage() );
+      menu_redraw_required = 0;
+    }
+    updateMenu();
+  }
+  else if ( SysStage == STAGE_GPS )
+  {
+    //OLED-------------------------------
+    if ( STA )
+      vooled();  
+    else if ( noSTA_draw )
+    {
+      setFont_L;
+      u8g.setPrintPos(2, 18);
+      u8g.print("No GPS.");            
+      noSTA_draw = false;
+    }
+  }
+  else if ( SysStage == STAGE_APM )
+  {
+  }
+  else if ( SysStage == STAGE_CFG )
+  {
+  }
+  else if ( SysStage == STAGE_ABT )
+  {
+  }
+
   //GPS-------------------------------
   vogps_databegin();
 
@@ -550,8 +787,6 @@ void loop()
   
   voserial();
   
-  //OLED-------------------------------
-  vooled();  
-  voCubeV1Key();
+
 }
 

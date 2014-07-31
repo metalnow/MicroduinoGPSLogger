@@ -15,6 +15,16 @@ ArduinoMAVLink::ArduinoMAVLink(HardwareSerial * serial)
   telemHwSerial = serial;
 }
 
+void ArduinoMAVLink::begin(uint16_t baud)
+{
+  if ( telemSwserial )
+    telemSwserial->begin(baud);
+  else
+    telemHwSerial->begin(baud);
+
+  delay(10);
+}
+
 void ArduinoMAVLink::SetStatusCallback( status_callback callback )
 {
   cb_status = callback;

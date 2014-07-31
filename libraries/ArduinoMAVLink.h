@@ -23,8 +23,8 @@ public:
   ArduinoMAVLink(SoftwareSerial * serial);
   ArduinoMAVLink(HardwareSerial * serial);
   
-  void SetStatusCallback( status_callback callback );
-  
+  void begin(uint16_t baud); 
+  void SetStatusCallback( status_callback callback );  
   bool Initialize();
   void FlyHere( double lat, double lon, double alt );  
   void SetMode( uint8_t fltMode );
