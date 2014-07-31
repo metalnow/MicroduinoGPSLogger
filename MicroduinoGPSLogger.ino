@@ -1,4 +1,3 @@
-#include <ArduinoMAVLink.h>
 //==========================
 #define Core_Plus 1
 #define GPS_RXTX_Default 0
@@ -106,6 +105,22 @@ GPX myGPX;
     Adafruit_GPS GPS(&mySerial);
   #endif
 #endif
+//==========================
+#include <ArduinoMAVLink.h>
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(5, 4);
+ArduinoMAVLink mavLink(&mySerial);
+
+/*
+#if Core_Plus
+  ArduinoMAVLink mavLink(&Serial);
+#else
+  #include <SoftwareSerial.h>
+  SoftwareSerial mySerial(3, 2);
+  ArduinoMAVLink mavLink(&mySerial);
+#endif
+*/
+//==========================
 
 //lat_lon_transform================================
 void lat_lon_transform()
@@ -200,7 +215,6 @@ void vogps_dataread()
 }
 
 //OLED===================================================
-int key_up,key_down;
 void vooled()
 {
   if (time_oled > millis()) time_oled = millis();
@@ -209,7 +223,7 @@ void vooled()
     u8g.firstPage();
     do
     {
-      draw();
+      GPSDraw();
     }
     while( u8g.nextPage() );
     time_oled=millis();
@@ -226,7 +240,7 @@ void volcdlogo(unsigned int x, unsigned int y)
   while( u8g.nextPage() );
 }
 
-void draw(void)
+void GPSDraw(void)
 {
   setFont_L;
 
@@ -296,28 +310,39 @@ void draw(void)
   u8g.print(i_satellites);
 }
 
+uint8_t key_up,key_down;
+#define KEY_NONE   0
+#define KEY_PREV   1
+#define KEY_NEXT   2
+#define KEY_SELECT 3
+#define KEY_BACK   4
+#define KEY_SINGLE 5
+#define KEY_DOUBLE 6
+
+uint8_t uiKeyCodeFirst = KEY_NONE;
+uint8_t uiKeyCodeSecond = KEY_NONE;
+uint8_t uiKeyCode = KEY_NONE;
 void voCubeV1Key()
 {
-  int button = analogRead(A7);
-  int button_down = analogRead(A6);
-  if(button_down>500&&button_down<600)
-    key_down=1;
-  else if(button_down>600&&button_down<700)
-    key_down=2;
-  else
-    key_down=0;
+  uiKeyCodeSecond = uiKeyCodeFirst;
+  uint8_t button_down = analogRead(A6);
+  if(button_down>370&&button_down<380)
+    uiKeyCodeFirst=KEY_SINGLE;
+  else if(button_down>240&&button_down<250)
+    uiKeyCodeFirst=KEY_DOUBLE;
+  uint8_t button = analogRead(A7);    
   if(button<40)
-    key_up=2;
+    uiKeyCodeFirst=2;
   else if(button>50&&button<100) 
-    key_up=4;
-  else if(button>145&&button<155) 
-    key_up=1;
-  else if(button>240&&button<250) 
-    key_up=5;
-  else if(button>380&&button<400) 
-    key_up=3;
+    uiKeyCodeFirst=4;
+  else if(button>140&&button<155) 
+    uiKeyCodeFirst=1;
+  else if(button>230&&button<250) 
+    uiKeyCodeFirst=5;
+  else if(button>370&&button<400) 
+    uiKeyCodeFirst=3;
   else
-    key_up=0;   
+    uiKeyCodeFirst=KEY_NONE;   
   Serial.print("key status: ");    
   Serial.print(key_up);
   Serial.print(", ");    
