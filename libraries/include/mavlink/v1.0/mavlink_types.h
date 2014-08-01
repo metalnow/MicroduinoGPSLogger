@@ -126,7 +126,11 @@ typedef enum {
 #if (defined linux) | (defined __linux) | (defined  __MACH__) | (defined _WIN32)
 # define MAVLINK_COMM_NUM_BUFFERS 16
 #else
-# define MAVLINK_COMM_NUM_BUFFERS 4
+#   if (__AVR_ATmega644P__)
+#     define MAVLINK_COMM_NUM_BUFFERS 1
+#   else
+#     define MAVLINK_COMM_NUM_BUFFERS 4
+#   endif
 #endif
 #endif
 

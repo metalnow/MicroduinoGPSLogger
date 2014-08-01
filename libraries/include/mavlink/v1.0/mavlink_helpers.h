@@ -258,6 +258,10 @@ MAVLINK_HELPER uint8_t mavlink_parse_char(uint8_t chan, uint8_t c, mavlink_messa
 #endif
 #endif
 
+#if (__AVR_ATmega644P__)
+  chan = MAVLINK_COMM_0;
+#endif
+
 	mavlink_message_t* rxmsg = mavlink_get_channel_buffer(chan); ///< The currently decoded message
 	mavlink_status_t* status = mavlink_get_channel_status(chan); ///< The current decode status
 	int bufferIndex = 0;

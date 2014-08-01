@@ -113,6 +113,8 @@ void ArduinoMAVLink::StatusCallback( uint8_t status, uint32_t msg )
     cb_status(status, msg);
 }
 
+static uint8_t packbuffer[MAVLINK_MAX_PACKET_LEN];
+
 // 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
 void ArduinoMAVLink::SetMode( uint8_t fltMode )
 {
@@ -124,11 +126,10 @@ void ArduinoMAVLink::SetMode( uint8_t fltMode )
   
   mavlink_message_t msg;
 	mavlink_msg_set_mode_encode( 255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &mode);
+    
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
   
-  uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
-  uint16_t len = mavlink_msg_to_send_buffer(buffer, &msg);
-  
-  Write( buffer, len );
+  Write( packbuffer, len );
 }
 
 void ArduinoMAVLink::FlyHere( double lat, double lon, double alt )
@@ -155,11 +156,10 @@ void ArduinoMAVLink::FlyHere( double lat, double lon, double alt )
   wp.seq = 0; // waypoint index at 0
   
   mavlink_message_t msg;
-  uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
   mavlink_msg_mission_item_encode(255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &wp);
-  uint16_t len = mavlink_msg_to_send_buffer(buffer, &msg);
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
   
-  Write( buffer, len );
+  Write( packbuffer, len );
 }
 
 void ArduinoMAVLink::Write( uint8_t * buffer, uint16_t length )
