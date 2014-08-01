@@ -1,3 +1,9 @@
+#include <EEPROM.h>
+boolean b_write_sdcard = false;
+boolean b_read_gps = false;
+boolean b_debug_serail = false;
+#define CFG_EEPROM_ADDR 100;
+
 //==========================
 #define Core_Plus 1
 #define GPS_RXTX_Default 0
@@ -112,7 +118,7 @@ GPX myGPX;
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial(5, 4);
 ArduinoMAVLink mavLink(&mySerial);
-
+uint32_t apmAltitude = 5;
 /*
 #if Core_Plus
   ArduinoMAVLink mavLink(&Serial);
@@ -253,7 +259,7 @@ void GPSDraw(void)
 {
   setFont_L;
   u8g.setPrintPos(2, 18);
-  u8g.print("Speed:");
+  u8g.print(F("Speed:"));
   if(STA)
   {
     u8g.print(i_Speed[1]);
@@ -263,20 +269,20 @@ void GPSDraw(void)
   }
   else
   {
-    u8g.print("N/A");
+    u8g.print(F("N/A"));
     setFont_M;
   }
 
   u8g.setPrintPos(2, 32);
-  u8g.print("Lat.: ");
+  u8g.print(F("Lat.: "));
   u8g.print( c_lat);
   u8g.print(" ");
   u8g.print( f_latitude,4);
 
   u8g.setPrintPos(2, 41);
-  u8g.print("Lon.: ");
+  u8g.print(F("Lon.: "));
   u8g.print( c_lon);
-  u8g.print(" ");
+  u8g.print(F(" "));
   u8g.print(f_longitude,4);
 
 
@@ -285,18 +291,18 @@ void GPSDraw(void)
   u8g.drawLine(0, 55, 128, 55);
 
   u8g.setPrintPos(2, 53);
-  u8g.print("20");
+  u8g.print(F("20"));
   u8g.print(idate[0]);
-  u8g.print("-");
+  u8g.print(F("-"));
   u8g.print(idate[1]);
-  u8g.print("-");
+  u8g.print(F("-"));
   u8g.print(idate[2]);
 
-  u8g.print("  ");
+  u8g.print(F("  "));
   u8g.print(itime[0]);
-  u8g.print(":");
+  u8g.print(F(":"));
   u8g.print(itime[1]);
-  u8g.print(":");
+  u8g.print(F(":"));
   u8g.print(itime[2]);
 
   for(int a=0;a<3;a++)
@@ -309,11 +315,11 @@ void GPSDraw(void)
   }
 
   u8g.setPrintPos(72, 64);
-  u8g.print("ELE.:");
+  u8g.print(F("ELE.:"));
   u8g.print(int(f_Height));
 
   u8g.setPrintPos(20, 64);
-  u8g.print("Sat.:");
+  u8g.print(F("Sat.:"));
   u8g.print(i_satellites);
 }
 
@@ -456,7 +462,7 @@ void vosdwrite()
     }
     else
     {
-      Serial.println("sd card file creation failed");
+      Serial.println(F("sd card file creation failed"));
     }
   }
   
@@ -501,36 +507,36 @@ void voserial()
 
   if (!STA)
   {
-    Serial.println("NO GPS");
+    Serial.println(F("NO GPS"));
     return;
   }
 
-  Serial.print("Speed:");
+  Serial.print(F("Speed:"));
   Serial.print(i_Speed[1]);
-  Serial.print(".");
+  Serial.print(F("."));
   Serial.print(i_Speed[0]);
-  Serial.print("\t");
+  Serial.print(F("\t"));
   
-  Serial.print("Lat.: ");
+  Serial.print(F("Lat.: "));
   Serial.print( c_lat);
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print( f_latitude,8);
-  Serial.print("\t");
+  Serial.print(F("\t"));
 
-  Serial.print("Lon.: ");
+  Serial.print(F("Lon.: "));
   Serial.print( c_lon);
-  Serial.print(" ");
+  Serial.print(F(" "));
   Serial.print(f_longitude,8);
-  Serial.print("\t");
+  Serial.print(F("\t"));
 
-  Serial.print("ELE.:");
+  Serial.print(F("ELE.:"));
   Serial.print(int(f_Height));
-  Serial.print("\t");
+  Serial.print(F("\t"));
 
-  Serial.print("Sat.:");
+  Serial.print(F("Sat.:"));
   Serial.print(i_satellites);    
   
-  Serial.print("\n");
+  Serial.print(F("\n"));
 }
 
 //Menus ===================================================
@@ -541,11 +547,19 @@ void voserial()
 #define STAGE_CFG  4  // config
 #define STAGE_APM  5  // amp control
 #define STAGE_ABT  6  // about
+#define STAGE_QUESTION  7  // about
+#define STAGE_MAIN_TOTAL STAGE_QUESTION
+#define STAGE_APM_FOLLOW  STAGE_MAIN_TOTAL+1  // apm follow me
+
 
 uint8_t SysStage = STAGE_NONE;
 uint8_t LastSysStage = STAGE_NONE;
 
 boolean noSTA_draw = true;
+
+uint8_t menu_current = 0;
+uint8_t menu_redraw_required = 0;
+uint8_t last_key_code = KEY_NONE;
 
 #define MENU_ITEMS 4
 #define MENU_GPS  0 
@@ -553,10 +567,6 @@ boolean noSTA_draw = true;
 #define MENU_CFG  2 
 #define MENU_ABT  3 
 char *menu_strings[MENU_ITEMS] = { "GPS Status", "APM Planner", "Config", "About" };
-uint8_t menu_current = 0;
-uint8_t menu_redraw_required = 0;
-uint8_t last_key_code = KEY_NONE;
-
 void drawMenu() 
 {
   uint8_t i, h;
@@ -579,6 +589,162 @@ void drawMenu()
   }
 }
 
+#define MENU_APM_ITEMS 4
+#define MENU_APM_ARM      0 
+#define MENU_APM_FOLLOW   1 
+#define MENU_APM_TAKEOFF  2 
+#define MENU_APM_RTL      3 
+char *menu_apm_strings[MENU_APM_ITEMS] = { "Arm", "Follow me", "Takeoff", "RTL" };
+void drawAPMMenu() 
+{
+  uint8_t i, h;
+  u8g_uint_t w, d;
+
+  u8g.setFont(u8g_font_6x13);
+  u8g.setFontRefHeightText();
+  u8g.setFontPosTop();
+  
+  h = u8g.getFontAscent()-u8g.getFontDescent();
+  w = u8g.getWidth();
+  for( i = 0; i < MENU_APM_ITEMS; i++ ) {
+    d = (w-u8g.getStrWidth(menu_apm_strings[i]))/2;
+    u8g.setDefaultForegroundColor();
+    if ( i == menu_current ) {
+      u8g.drawBox(0, i*h+1, w, h);
+      u8g.setDefaultBackgroundColor();
+    }
+    u8g.drawStr(d, i*h, menu_apm_strings[i]);
+  }
+}
+
+#define MENU_CFG_ITEMS 3
+#define MENU_CFG_GPS      0 
+#define MENU_CFG_SDCARD   1 
+#define MENU_CFG_SERIAL   2 
+char *menu_cfg_strings[MENU_CFG_ITEMS] = { "GPS Read", "SDCard Write", "Serial Debug" };
+void drawCFGMenu()
+{
+  uint8_t i, h, optSize;
+  u8g_uint_t w, d;
+
+  u8g.setFont(u8g_font_6x13);
+  u8g.setFontRefHeightText();
+  u8g.setFontPosTop();
+  
+  h = u8g.getFontAscent()-u8g.getFontDescent();
+  w = u8g.getWidth();
+  optSize = h - 2 ;
+  for( i = 0; i < MENU_CFG_ITEMS; i++ ) {
+    d = (w-u8g.getStrWidth(menu_cfg_strings[i]))/2;
+    u8g.setDefaultForegroundColor();
+    if ( i == menu_current ) {
+      u8g.drawBox(h, i*h+1, w, h);
+      u8g.setDefaultBackgroundColor();
+    }
+    
+    if ( i == MENU_CFG_GPS && b_read_gps 
+      || i == MENU_CFG_SDCARD && b_write_sdcard 
+      || i == MENU_CFG_SERIAL && b_debug_serail )
+      u8g.drawBox(2, i*(h+2)+1, optSize, optSize);    
+    else
+      u8g.drawFrame(2, i*(h+2)+1, optSize, optSize);    
+    u8g.drawStr(d, i*h, menu_cfg_strings[i]);
+  }  
+}
+
+void drawAbout()
+{
+  u8g.setFont(u8g_font_6x13);
+  u8g.setFontRefHeightText();
+  u8g.setFontPosTop();
+  u8g.print(F("It's me, baby."));
+}
+
+#define MENU_QUESTION_ITEMS 2
+#define MENU_QUESTION_NO    0 
+#define MENU_QUESTION_YES   1 
+int8_t question_state = 0;
+char questionTitle[10];
+char *menu_question_strings[MENU_QUESTION_ITEMS] = { "No", "Yes" };
+void drawQuestionMenu()
+{
+  uint8_t i, h;
+  u8g_uint_t w, d;
+
+  u8g.setFont(u8g_font_6x13);
+  u8g.setFontRefHeightText();
+  u8g.setFontPosTop();
+  
+  u8g.drawStr(2, 2, questionTitle);  
+  
+  h = u8g.getFontAscent()-u8g.getFontDescent();
+  w = u8g.getWidth();
+  for( i = 0; i < MENU_APM_ITEMS; i++ ) {
+    d = (w-u8g.getStrWidth(menu_question_strings[i]))/2;
+    u8g.setDefaultForegroundColor();
+    if ( i == menu_current ) {
+      u8g.drawBox(0, h+i*h+1, w, h);
+      u8g.setDefaultBackgroundColor();
+    }
+    u8g.drawStr(d, i*h, menu_question_strings[i]);
+  }  
+}
+
+void drawFollow()
+{
+  setFont_M;
+  
+  for(int a=0;a<3;a++)
+  {
+    u8g.drawFrame(2+(5*a), 8-(a*2), 4, 3+(a*2));
+  }
+  for(int a=0;a<f_fixquality+1;a++)
+  {
+    u8g.drawBox(2+(5*a), 8-(a*2), 4, 3+(a*2));
+  }
+
+  u8g.setPrintPos(20, 8);
+  u8g.print(F("Sat.:"));
+  u8g.print(i_satellites);  
+
+  u8g.setPrintPos(2, 17);
+  u8g.print(F("Lat.: "));
+  u8g.print(f_latitude,4);
+  u8g.setPrintPos(2, 26);
+  u8g.print(F("Lon.: "));
+  u8g.print(f_longitude,4);
+
+  u8g.setPrintPos(70, 8);
+  u8g.print(F("Alt.:"));
+  setFont_L;
+  u8g.setPrintPos(72, 17);  
+  u8g.print(apmAltitude);
+  setFont_M;
+
+  u8g.drawLine(0, 44, 128, 44);
+
+  u8g.drawLine(0, 55, 128, 55);
+
+  u8g.setPrintPos(2, 53);
+  u8g.print(F("20"));
+  u8g.print(idate[0]);
+  u8g.print(F("-"));
+  u8g.print(idate[1]);
+  u8g.print(F("-"));
+  u8g.print(idate[2]);
+
+  u8g.print(F("  "));
+  u8g.print(itime[0]);
+  u8g.print(F(":"));
+  u8g.print(itime[1]);
+  u8g.print(F(":"));
+  u8g.print(itime[2]);
+
+
+
+}
+
+//Button handle===================================================
 void prevBtn()
 {
   boolean back2Menu = false;
@@ -589,6 +755,7 @@ void prevBtn()
       back2Menu = true;
     break;      
     case STAGE_CFG:
+      writeCFG();
       menu_current = MENU_CFG;
       back2Menu = true;
     break;      
@@ -599,6 +766,16 @@ void prevBtn()
     case STAGE_ABT:
       menu_current = MENU_ABT;    
       back2Menu = true;
+    break;
+    case STAGE_QUESTION:
+      question_state = -1;
+      menu_current = 0;
+      back2Menu = true;
+    break;
+    case STAGE_APM_FOLLOW:
+      question_state = 0;
+      menu_current = MENU_QUESTION_YES;
+      setNextSysStage(STAGE_QUESTION);
     break;
     default:
     break;
@@ -619,6 +796,7 @@ void nextBtn()
         setNextSysStage(STAGE_GPS);
       break;
       case MENU_APM:
+        menu_current = 0;
         setNextSysStage(STAGE_APM);
       break;
       case MENU_CFG:
@@ -629,11 +807,61 @@ void nextBtn()
       break;
     }
   }
+  else if ( SysStage == STAGE_APM )
+  {    
+    switch(menu_current)
+    {
+      case MENU_APM_ARM:
+      break;
+      case MENU_APM_FOLLOW:
+        setNextSysStage(STAGE_APM_FOLLOW);
+        if ( !b_read_gps )
+        {
+          b_read_gps = true;
+          writeCFG();
+        }
+      break;
+      case MENU_APM_TAKEOFF:
+      break;
+      case MENU_APM_RTL:
+      break;
+    }
+    menu_redraw_required = 1;    
+  }
+  else if ( SysStage == STAGE_CFG )
+  {
+    switch(menu_current)
+    {
+      case MENU_CFG_GPS:
+        b_read_gps = !b_read_gps;
+      break;
+      case MENU_CFG_SDCARD:
+        b_write_sdcard = !b_write_sdcard;
+      break;
+      case MENU_CFG_SERIAL:
+        b_debug_serail = !b_debug_serail;
+      break;
+    }
+    menu_redraw_required = 1;
+  }
+  else if ( SysStage == STAGE_ABT )
+  {
+  }
+  else if ( SysStage == STAGE_QUESTION )
+  {
+    if ( menu_current == MENU_QUESTION_YES )
+      question_state = 1;
+    else 
+      question_state = -1;
+    setNextSysStage(LastSysStage);
+  }
 }
 
 void selectBtn()
 {
-  if ( SysStage == STAGE_MENU )
+  if ( SysStage == STAGE_MENU 
+    || SysStage == STAGE_CFG
+    || SysStage == STAGE_APM )
     nextBtn();
 }
 
@@ -671,17 +899,52 @@ void updateMenu()
   }
 }
 
-//===================================================
+// apm handle ===================================================
+void updateAltitude() 
+{
+  if ( uiKeyCode != KEY_NONE && last_key_code == uiKeyCode ) 
+  {
+    return;
+  }
+  last_key_code = uiKeyCode;
+  
+  switch ( uiKeyCode ) 
+  {
+    case KEY_DOWN:
+      menu_redraw_required = 1;
+      apmAltitude++;
+      if ( apmAltitude > 30 )
+        apmAltitude = 30;
+      break;
+    case KEY_UP:
+      menu_redraw_required = 1;
+      apmAltitude--;
+      if ( apmAltitude < 1 )
+        apmAltitude = 1;
+      break;
+    case KEY_PREV:
+      prevBtn();
+      break;
+    case KEY_NEXT:
+      nextBtn();
+      break;
+    case KEY_SELECT:
+      selectBtn();
+      break;
+  }
+}
+
+// Mavlink callback===================================================
 void MAVLinkStatusReport(uint8_t status, uint32_t msg)
 {
   setFont_L;
   u8g.setPrintPos(2, 18);
   if ( status == ML_INITIAL )
   {
-    u8g.print("Init MAVLink.");  
+    u8g.print(F("Init MAVLink."));  
     setFont_M;
     u8g.setPrintPos(2, 32);
-    u8g.print("Elapsed Time: ");
+    u8g.print(F("Elapsed Time: "));
     u8g.print(msg);
   }
     
@@ -689,6 +952,7 @@ void MAVLinkStatusReport(uint8_t status, uint32_t msg)
   
 }
 
+//===================================================
 void setNextSysStage( uint8_t next )
 {
   LastSysStage = SysStage;
@@ -696,8 +960,31 @@ void setNextSysStage( uint8_t next )
   menu_redraw_required = 1;  
 }
 
+void readCFG()
+{
+  uint8_t eeprom_addr = CFG_EEPROM_ADDR;
+  b_write_sdcard = EEPROM.read(eeprom_addr);
+  eeprom_addr++;
+  b_read_gps = EEPROM.read(eeprom_addr);
+  eeprom_addr++;
+  b_debug_serail = EEPROM.read(eeprom_addr);
+  eeprom_addr++;
+}
+
+void writeCFG()
+{
+  uint8_t eeprom_addr = CFG_EEPROM_ADDR;
+  EEPROM.write(eeprom_addr, b_write_sdcard);
+  eeprom_addr++;
+  EEPROM.write(eeprom_addr, b_read_gps);
+  eeprom_addr++;
+  EEPROM.write(eeprom_addr, b_debug_serail);
+  eeprom_addr++;  
+}
+
 void setup()
 {
+  readCFG();
   setNextSysStage(STAGE_INIT);
   Serial.begin(57600);
   GPS.begin(38400);
@@ -710,7 +997,7 @@ void setup()
   if (SD.begin(PIN_CS_SD)) 
     sd_sta = true;
   else
-    Serial.println("sd card initialization failed");
+    Serial.println(F("sd card initialization failed"));
   if (sd_sta)
     checkLastTimeFileStatus();
     
@@ -721,23 +1008,37 @@ void setup()
   {
     setFont_L;
     u8g.setPrintPos(2, 18);
-    u8g.print("Init MAVLink Success.");          
+    u8g.print(F("Init MAVLink Success."));          
   }
   else
   {
     setFont_L;
     u8g.setPrintPos(2, 18);
-    u8g.print("Init MAVLink Failed.");      
+    u8g.print(F("Init MAVLink Failed."));      
   }
   setFont_S;
   u8g.setPrintPos(2, 64);
-  u8g.print("press any key to continue...");  
+  u8g.print(F("press any key to continue..."));  
   delay(500);
 }
 
 void loop()
 {
+  //GPS-------------------------------
+  if ( b_read_gps )
+  {
+    vogps_databegin();  
+    vogps_dataread();
+  
+    if ( b_write_sdcard )
+      vosdwrite();
+    
+    if ( b_debug_serail )
+      voserial();
+  }  
+  
   voCubeV1Key();
+  
   if ( SysStage == STAGE_INIT )
   {
     if ( uiKeyCode != KEY_NONE )
@@ -764,29 +1065,94 @@ void loop()
     {
       setFont_L;
       u8g.setPrintPos(2, 18);
-      u8g.print("No GPS.");            
+      u8g.print(F("No GPS."));            
       noSTA_draw = false;
     }
   }
   else if ( SysStage == STAGE_APM )
   {
+    if (  menu_redraw_required != 0 ) 
+    {
+      u8g.firstPage();
+      do  {
+        drawAPMMenu();
+      } while( u8g.nextPage() );
+      menu_redraw_required = 0;
+    }
+    updateMenu();    
   }
   else if ( SysStage == STAGE_CFG )
   {
+    if (  menu_redraw_required != 0 ) 
+    {
+      u8g.firstPage();
+      do  {
+        drawCFGMenu();
+      } while( u8g.nextPage() );
+      menu_redraw_required = 0;
+    }    
+    updateMenu();        
   }
   else if ( SysStage == STAGE_ABT )
   {
+    if (  menu_redraw_required != 0 ) 
+    {
+      u8g.firstPage();
+      do  {
+        drawAbout();
+      } while( u8g.nextPage() );
+      menu_redraw_required = 0;
+    }
   }
-
-  //GPS-------------------------------
-  vogps_databegin();
-
-  vogps_dataread();
-
-  vosdwrite();
-  
-  voserial();
-  
+  else if ( SysStage == STAGE_QUESTION )
+  {
+    if (  menu_redraw_required != 0 ) 
+    {
+      u8g.firstPage();
+      do  {
+        drawQuestionMenu();
+      } while( u8g.nextPage() );
+      menu_redraw_required = 0;
+    }    
+    updateMenu();            
+  }
+  else if ( SysStage == STAGE_APM_FOLLOW )
+  {    
+    if ( question_state == 0 )
+    {
+      updateAltitude();                  
+      
+      if (STA)
+      {
+        mavLink.FlyHere(f_latitude, f_longitude, apmAltitude);
+        menu_redraw_required = 1;
+      }
+      
+      if (  menu_redraw_required != 0 ) 
+      {
+        u8g.firstPage();
+        do  {
+          drawFollow();
+        } while( u8g.nextPage() );
+        menu_redraw_required = 0;
+      }
+       
+    }
+    else
+    {
+      if ( question_state < 0 ) // No, do nothing
+      {
+      }
+      else if ( question_state > 0 ) // Yes
+      {
+        // CancelFollowMe();
+        LastSysStage = STAGE_APM;
+        menu_current = MENU_APM_FOLLOW;    
+        setNextSysStage(LastSysStage);     
+      }
+      question_state = 0;
+    }    
+  }
 
 }
 
