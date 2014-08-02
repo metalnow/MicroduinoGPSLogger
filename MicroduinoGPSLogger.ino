@@ -226,6 +226,19 @@ void volcdlogo(unsigned int x, unsigned int y)
   while( u8g.nextPage() );
 }
 
+void volcdPrintText(char * text)
+{
+  u8g.firstPage();
+  do
+  {
+    setFont_L;
+    u8g.setPrintPos(2, 18);
+    u8g.print(text);
+  }
+  while( u8g.nextPage() );
+}
+
+
 void draw(void)
 {
   setFont_L;
@@ -296,33 +309,42 @@ void draw(void)
   u8g.print(i_satellites);
 }
 
-void voCubeV1Key()
+#define KEY_UP     0x0001
+#define KEY_LEFT   0x0002
+#define KEY_MIDDLE 0x0004
+#define KEY_RIGHT  0x0008
+#define KEY_DOWN   0x0010
+#define KEY_SINGLE 0x0020
+#define KEY_DOUBLE 0x0040
+
+int voCubeV1Key()
 {
   if (time_key > millis()) time_key = millis();
   if(millis()-time_key>init_key)
   {  
     int button2 = analogRead(A6);
     if(button2>370&&button2<380)
-      key_down=1;  // single
+      key_down=KEY_SINGLE;  // single
     else if(button2>240&&button2<250)
-      key_down=2;  // double
+      key_down=KEY_DOUBLE;  // double
     else
       key_down=0;
     
     int button5 = analogRead(A7);
     if(button5<40)  //left
-      key_up=2;
+      key_up=KEY_LEFT;
     else if(button5>50&&button5<100) // right
-      key_up=4;
+      key_up=KEY_RIGHT;
     else if(button5>140&&button5<155) // up
-      key_up=1;
+      key_up=KEY_UP;
     else if(button5>230&&button5<250) // down
-      key_up=5;
+      key_up=KEY_DOWN;
     else if(button5>370&&button5<400) // middle
-      key_up=3;
+      key_up=KEY_MIDDLE;
     else
       key_up=0;   
-      
+            
+    return key_up | key_down;
     if ( key_up != 0 || key_down!= 0 )
     {
       Serial.print("key status: ");    
@@ -442,6 +464,9 @@ void vosdwrite()
     String speed = String(i_Speed[1]) + "." + String(i_Speed[0]);
     myGPX.setSpeed(speed);
 
+    // Sat
+    myGPX.setSat(String(i_satellites));        
+    
     //Date/Time
     char* stmp;    
     stmp=(char*)malloc(sizeof(char)*42);
@@ -538,6 +563,41 @@ void loop()
   //OLED-------------------------------
   if ( STA )
     vooled();  
-  voCubeV1Key();
+  int keyCode = voCubeV1Key();
+  if ( keyCode & KEY_UP )
+  {
+      volcdPrintText("Up Press!");
+  }
+  if ( keyCode & KEY_DOWN )
+  {
+      volcdPrintText("Down Press!");
+  }
+  if ( keyCode & KEY_LEFT )
+  {
+      volcdPrintText("Left Press!");
+  }
+  if ( keyCode & KEY_RIGHT )
+  {
+      volcdPrintText("Right Press!");
+  }
+  if ( keyCode & KEY_MIDDLE )
+  {
+    if (file_sta)
+    {
+      checkLastTimeFileStatus();
+      volcdPrintText("File Written!");
+      file_sta = false;
+    }
+    else
+      volcdPrintText("Select!");
+  }
+  if ( keyCode & KEY_SINGLE )
+  {
+      volcdPrintText("Single Press!");
+  }
+  if ( keyCode & KEY_DOUBLE )
+  {
+      volcdPrintText("Double Press!");
+  }
 }
 
