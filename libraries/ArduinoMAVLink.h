@@ -29,6 +29,8 @@ public:
   void FlyHere( double lat, double lon, double alt );  
   void SetMode( uint8_t fltMode );
   bool Received(); 
+  void ArmDisarm( bool arm );
+  bool isArm();
   
 protected:
 
@@ -37,6 +39,7 @@ protected:
   
 private:
   void StatusCallback( uint8_t status, uint32_t msg );
+  void SendCommand( uint16_t cmd, float p1 = 0, float p2 = 0, float p3 = 0, float p4 = 0, float p5 = 0, float p6 = 0, float p7 = 0, uint8_t confirmation = 0);
   void Write( uint8_t * buffer, uint16_t length );
 
   //static char _receive_buffer[_ML_MAX_BUFF];   
@@ -49,6 +52,9 @@ private:
   uint8_t sysid;
   uint8_t compid;
   uint8_t recvpacketcount;
+  uint32_t custom_mode;
+  uint8_t base_mode;
+  uint8_t system_status;
   
   uint8_t error;
 };

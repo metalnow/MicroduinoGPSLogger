@@ -1081,136 +1081,8 @@ void writeCFG()
   eeprom_addr++;  
 }
 
-#include <ArduinoMAVLinkHeader.h>
-/*
-void getHeartBeat()
-{
-  char buffer[64];
-  uint8_t bufIdx = 0;
-  while( true )
-  {
-    if ( mySerial.available() > 0 )
-    {
-      uint8_t c = mySerial.read();
-      buffer[bufIdx++] = c;
-      if ( bufIdx > 5 )
-      {
-        if ( buffer[5] == MAVLINK_MSG_ID_HEARTBEAT )
-        {
-            mavlink_heartbeat_t hb;
-            memcpy( &hb, buffer, bufIdx );
-            Serial.print("Heart beat: ");
-            Serial.print(hb.mavlink_version);
-            Serial.print(" ");
-            Serial.print(hb.type);
-            Serial.print(" ");
-            Serial.print(hb.autopilot);
-            Serial.print(" ");
-            Serial.print(int(buffer[3]));
-            Serial.print(" ");
-            Serial.print(int(buffer[4]));
-            Serial.print(" ");
-            Serial.print(int(buffer[2]));
-            Serial.println(" ");
-        }
-        bufIdx = 0;
-      }
-    }
-    
-  }
-  
-}
-*/
- 
 void InitMavlink()
 {  
-/*  
-  //char _receive_buffer[256];
-  mavlink_message_t msg;
-  mavlink_status_t status;
-  mavlink_heartbeat_t hb;
-  
-  uint8_t bufIdx = 0;
-  uint8_t headIdx = 0;
-  uint8_t hb_count = 0;
-  timer = millis();
-  while (hb_count < 2)
-  {  
-    unsigned long elapsed_time = millis() - timer;
-    if ( elapsed_time > 30000 )      
-    {
-      Serial.println("time out");
-      return;
-    }
-    
-    while (mySerial.available() > 0) 
-    {
-      Serial.print(bufIdx);
-      uint8_t c = mySerial.read();
-      //_receive_buffer[bufIdx++] = c;
-      Serial.print(" mavlink get: ");
-      Serial.println(int(c));
-      if (c==MAVLINK_STX)
-        headIdx = bufIdx-1;
-      // Try to get a new message
-      if(mavlink_parse_char(MAVLINK_COMM_0, c, &msg, &status)) 
-      {
-        Serial.print("parsing: ");
-        Serial.print(msg.msgid);
-        Serial.print(" ");
-        Serial.print(headIdx);
-        Serial.print(" ");
-        Serial.println(bufIdx);        
-        // Handle message    
-        switch(msg.msgid)
-        {
-          case MAVLINK_MSG_ID_HEARTBEAT:
-          {
-            //_receive_buffer[bufIdx] = '\0';
-            //memcpy( &hb, &_receive_buffer[headIdx+6], MAVLINK_MSG_ID_HEARTBEAT_LEN );
-            mavlink_msg_heartbeat_decode(&msg, &hb);
-            //bufIdx = 0;
-            //char * p_msg = (char *)&msg;
-            //char * p_hb = (char*)&hb;
-            //for(int i = 0; i < MAVLINK_MSG_ID_HEARTBEAT_LEN; ++i )
-            //  p_hb[i] = p_msg[i];
-            //hb = (mavlink_heartbeat_t *)&_receive_buffer[headIdx+6];
-            
-            
-            Serial.print("Hearbeat: ");
-            Serial.print(hb.type);
-            Serial.print(" ");
-            Serial.print(hb.mavlink_version);
-            Serial.print(" ");
-            Serial.print(hb.autopilot);
-            Serial.print(" ");
-            Serial.print(msg.sysid);
-            Serial.print(" ");
-            Serial.print(msg.compid);
-            Serial.print(" ");
-            Serial.print(msg.seq);
-            Serial.println(" ");    
-            hb_count= 2;        
-          }
-          break;
-          default:
-          //Do nothing
-          break;
-        }
-        bufIdx = 0;
-      }
-      
-      if ( bufIdx > 255 )
-        bufIdx = 0;
-      // And get the next one
-    }
-  }  
-  
-  mavlink_initial = true;
-
-*/  
-  
-  
   Serial.println(F("init mvalink"));
   delay(1000);
   if ( mavLink.Initialize() )
@@ -1316,7 +1188,6 @@ void loop()
       menu_redraw_required = 0;
     }
     if ( !mavlink_initial )
-      //getHeartBeat();
       InitMavlink();
     updateMenu();    
   }
@@ -1397,5 +1268,14 @@ void loop()
     }    
   }
 
+  if ( mavlink_initial )
+  {
+    if ( SysStage == STAGE_APM 
+      || SysStage == STAGE_APM_FOLLOW )
+    {
+      mavLink.Received();
+    }
+  }
+  
 }
 

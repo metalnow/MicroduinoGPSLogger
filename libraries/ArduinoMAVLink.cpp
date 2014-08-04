@@ -45,7 +45,6 @@ bool ArduinoMAVLink::Initialize()
     
   mavlink_message_t msg;
   mavlink_status_t status;
-  mavlink_heartbeat_t hb;
   
   uint8_t bufIdx = 0;
   uint8_t hb_count = 0;
@@ -72,10 +71,8 @@ bool ArduinoMAVLink::Initialize()
         switch(msg.msgid)
         {
           case MAVLINK_MSG_ID_HEARTBEAT:
-          {
-            
-            //char * offset = _receive_buffer+6;
-            //memcpy( &hb, offset, sizeof(mavlink_heartbeat_t) );
+          {            
+            mavlink_heartbeat_t hb;          
             mavlink_msg_heartbeat_decode(&msg, &hb);
             if ( hb.type != MAV_TYPE_GCS )
             {
@@ -84,6 +81,9 @@ bool ArduinoMAVLink::Initialize()
                 mavlinkversion = hb.mavlink_version;
                 type = hb.type;
                 autopilot = hb.autopilot;
+                custom_mode = hb.custom_mode;
+                base_mode = hb.base_mode;
+                system_status = hb.system_status;                
                 sysid = msg.sysid;
                 compid = msg.compid;
                 recvpacketcount = msg.seq;
@@ -120,6 +120,36 @@ void ArduinoMAVLink::StatusCallback( uint8_t status, uint32_t msg )
 }
 
 static uint8_t packbuffer[MAVLINK_MAX_PACKET_LEN];
+
+void ArduinoMavLink::ArmDisarm( bool arm )
+{
+  SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, arm ? 0 : 1 );
+}
+
+void ArduinoMavLink::SendCommand( uint16_t cmd, float, p1, float p2, float p3, float p4, float p5, float p6, float p7, uint8_t confirmation )
+{
+  mavlink_command_long_t command;
+  memset(&command, 0, sizeof(packet1));
+  command.param1 = p1;
+  command.param2 = p2;
+  command.param3 = p3;
+  command.param4 = p4;
+  command.param5 = p5;
+  command.param6 = p6;
+  command.param7 = p7;
+  command.command = cmd;  // MAV_CMD
+  command.target_system = sysid;
+  command.target_component = compid;
+  command.confirmation = confirmation;
+  
+  if ( cmd == MAV_CMD_COMPONENT_ARM_DISARM )
+    command.target_component = MAV_COMP_ID_SYSTEM_CONTROL;
+    
+  mavlink_message_t msg;
+  mavlink_msg_command_long_encode( 255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &command);
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
+  Write( packbuffer, len );
+}
 
 // 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
 void ArduinoMAVLink::SetMode( uint8_t fltMode )
@@ -202,6 +232,13 @@ bool ArduinoMAVLink::Received()
       {
         case MAVLINK_MSG_ID_HEARTBEAT:
         {
+          mavlink_heartbeat_t hb;          
+          mavlink_msg_heartbeat_decode(&msg, &hb);
+          if ( hb.type != MAV_TYPE_GCS && sysid == msg.sysid && compid == msg.compid )
+          {
+            custom_mode = hb.custom_mode;
+            base_mode = hb.base_mode;
+          }
         }
         break;
         case MAVLINK_MSG_ID_COMMAND_LONG:
@@ -218,6 +255,13 @@ bool ArduinoMAVLink::Received()
   }
   
   return got;
+}
+
+bool ArduinoMAVLink::isArm()
+{
+  if((base_mode & MAV_MODE_FLAG_SAFETY_ARMED) == MAV_MODE_FLAG_SAFETY_ARMED)
+    return true;
+  return false;
 }
 
 /*
