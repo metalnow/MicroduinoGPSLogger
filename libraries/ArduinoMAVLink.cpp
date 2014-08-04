@@ -2,7 +2,7 @@
 #include "include/mavlink/v1.0/common/mavlink.h"        // Mavlink interface
 #include "include/mavlink/v1.0/ardupilotmega/ardupilotmega.h"
 
-char ArduinoMAVLink::_receive_buffer[_ML_MAX_BUFF]; 
+//char ArduinoMAVLink::_receive_buffer[_ML_MAX_BUFF]; 
 status_callback ArduinoMAVLink::cb_status;
 
 ArduinoMAVLink::ArduinoMAVLink(SoftwareSerial * serial)
@@ -45,11 +45,12 @@ bool ArduinoMAVLink::Initialize()
     
   mavlink_message_t msg;
   mavlink_status_t status;
-   
+  mavlink_heartbeat_t hb;
+  
   uint8_t bufIdx = 0;
   uint8_t hb_count = 0;
   
-  while (hb_count < HEART_BEAT_COMFIRM && bufIdx < _ML_MAX_BUFF)
+  while (hb_count < HEART_BEAT_COMFIRM)
   {  
     unsigned long elapsed_time = millis() - timer;
     StatusCallback( ML_INITIAL, elapsed_time );
@@ -59,10 +60,10 @@ bool ArduinoMAVLink::Initialize()
       return false;
     }
     
-    while (_serial->available() > 0 && bufIdx < _ML_MAX_BUFF) 
+    while (_serial->available() > 0) 
     {
       uint8_t c = _serial->read();
-      _receive_buffer[bufIdx++] = c;
+      //_receive_buffer[bufIdx++] = c;
       
       // Try to get a new message
       if(mavlink_parse_char(MAVLINK_COMM_0, c, &msg, &status)) 
@@ -72,8 +73,10 @@ bool ArduinoMAVLink::Initialize()
         {
           case MAVLINK_MSG_ID_HEARTBEAT:
           {
-            mavlink_heartbeat_t hb;
-            memcpy( &hb, _receive_buffer, bufIdx );
+            
+            //char * offset = _receive_buffer+6;
+            //memcpy( &hb, offset, sizeof(mavlink_heartbeat_t) );
+            mavlink_msg_heartbeat_decode(&msg, &hb);
             if ( hb.type != MAV_TYPE_GCS )
             {
               if ( hb_count == 0 )
@@ -91,7 +94,6 @@ bool ArduinoMAVLink::Initialize()
                   hb_count--;
               }
               hb_count++;
-              bufIdx = 0;
             }
           }
           break;
@@ -99,8 +101,12 @@ bool ArduinoMAVLink::Initialize()
           //Do nothing
           break;
         }
+        //bufIdx = 0;
       }
       // And get the next one
+      //if ( bufIdx >= _ML_MAX_BUFF )
+      //  bufIdx = 0;
+      
     }
   }
   

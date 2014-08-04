@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include <SoftwareSerial.h>
 
-#define _ML_MAX_BUFF 64 // buffer size
+#define _ML_MAX_BUFF 256 // buffer size
 
 typedef enum
 {
@@ -39,7 +39,7 @@ private:
   void StatusCallback( uint8_t status, uint32_t msg );
   void Write( uint8_t * buffer, uint16_t length );
 
-  static char _receive_buffer[_ML_MAX_BUFF];   
+  //static char _receive_buffer[_ML_MAX_BUFF];   
   
   static status_callback cb_status;
   
