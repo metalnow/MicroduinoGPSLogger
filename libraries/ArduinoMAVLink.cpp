@@ -121,15 +121,15 @@ void ArduinoMAVLink::StatusCallback( uint8_t status, uint32_t msg )
 
 static uint8_t packbuffer[MAVLINK_MAX_PACKET_LEN];
 
-void ArduinoMavLink::ArmDisarm( bool arm )
+void ArduinoMAVLink::ArmDisarm( bool arm )
 {
-  SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, arm ? 0 : 1 );
+  SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, arm ? 0.0f : 1.0f );
 }
 
-void ArduinoMavLink::SendCommand( uint16_t cmd, float, p1, float p2, float p3, float p4, float p5, float p6, float p7, uint8_t confirmation )
+void ArduinoMAVLink::SendCommand( uint16_t cmd, float p1, float p2, float p3, float p4, float p5, float p6, float p7, uint8_t confirmation )
 {
   mavlink_command_long_t command;
-  memset(&command, 0, sizeof(packet1));
+  memset(&command, 0, sizeof(command));
   command.param1 = p1;
   command.param2 = p2;
   command.param3 = p3;
