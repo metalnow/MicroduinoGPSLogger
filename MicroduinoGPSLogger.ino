@@ -1238,7 +1238,7 @@ void loop()
       
       if (STA)
       {
-        mavLink.FlyHere(f_latitude, f_longitude, apmAltitude);
+        mavLink.DoFlyHere(f_latitude, f_longitude, apmAltitude);
         menu_redraw_required = 1;
       }
       

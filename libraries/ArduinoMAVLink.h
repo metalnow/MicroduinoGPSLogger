@@ -3,6 +3,26 @@
 
 #define _ML_MAX_BUFF 256 // buffer size
 
+// Auto Pilot modes
+// ----------------
+#define STABILIZE 0                     // hold level position
+#define ACRO 1                          // rate control
+#define ALT_HOLD 2                      // AUTO control
+#define AUTO 3                          // AUTO control
+#define GUIDED 4                        // AUTO control
+#define LOITER 5                        // Hold a single location
+#define RTL 6                           // AUTO control
+#define CIRCLE 7                        // AUTO control
+#define LAND 9                          // AUTO control
+#define OF_LOITER 10                    // Hold a single location using optical flow sensor
+#define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
+#define SPORT 13                        // earth frame rate control
+#define FLIP        14                  // flip the vehicle on the roll axis
+#define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
+#define POSHOLD     16                  // position hold with manual override
+#define NUM_MODES   17
+
+
 typedef enum
 {
   ML_ERR_NONE = 0,
@@ -26,11 +46,14 @@ public:
   void begin(uint16_t baud); 
   void SetStatusCallback( status_callback callback );  
   bool Initialize();
-  void FlyHere( double lat, double lon, double alt );  
   void SetMode( uint8_t fltMode );
   bool Received(); 
-  void ArmDisarm( bool arm );
   bool isArm();
+  void DoFlyHere( double lat, double lon, double alt );  
+  void DoArmDisarm( bool arm );
+  void DoTakeoff();
+  void DoLand();
+  void DoRTL();
   
 protected:
 
@@ -40,6 +63,7 @@ protected:
 private:
   void StatusCallback( uint8_t status, uint32_t msg );
   void SendCommand( uint16_t cmd, float p1 = 0, float p2 = 0, float p3 = 0, float p4 = 0, float p5 = 0, float p6 = 0, float p7 = 0, uint8_t confirmation = 0);
+  void SendNavCommand( uint16_t cmd, double lat, double lon, double alt, float p1 = 0, float p2 = 0, float p3 = 0, float p4 = 0 );
   void Write( uint8_t * buffer, uint16_t length );
 
   //static char _receive_buffer[_ML_MAX_BUFF];   

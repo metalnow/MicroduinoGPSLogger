@@ -121,9 +121,53 @@ void ArduinoMAVLink::StatusCallback( uint8_t status, uint32_t msg )
 
 static uint8_t packbuffer[MAVLINK_MAX_PACKET_LEN];
 
-void ArduinoMAVLink::ArmDisarm( bool arm )
+void ArduinoMAVLink::DoArmDisarm( bool arm )
 {
+  SetMode(STABILIZE);
   SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, arm ? 0.0f : 1.0f );
+}
+
+void ArduinoMAVLink::DoFlyHere( double lat, double lon, double alt )
+{
+  SetMode(GUIDED);
+  SendNavCommand( MAV_CMD_NAV_WAYPOINT, lat, lon, alt );
+}
+
+void ArduinoMAVLink::DoTakeoff()
+{
+  SendNavCommand( MAV_CMD_NAV_TAKEOFF, 0, 0, 5 /*meters*/ );
+  SetMode(AUTO);
+}
+
+void ArduinoMAVLink::DoLand()
+{
+  SendCommand( MAV_CMD_NAV_LAND );
+//  SendNavCommand( MAV_CMD_NAV_LAND, 0, 0, 0 );
+//  SetMode(AUTO);
+}
+
+void ArduinoMAVLink::DoRTL()
+{
+  SendCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH );
+//  SendNavCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0 );
+//  SetMode(AUTO);  
+}
+
+// 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+void ArduinoMAVLink::SetMode( uint8_t fltMode )
+{
+  mavlink_set_mode_t mode;
+  
+  mode.target_system = sysid;
+  mode.base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+  mode.custom_mode = fltMode;  
+  
+  mavlink_message_t msg;
+	mavlink_msg_set_mode_encode( 255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &mode);
+    
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
+  
+  Write( packbuffer, len );
 }
 
 void ArduinoMAVLink::SendCommand( uint16_t cmd, float p1, float p2, float p3, float p4, float p5, float p6, float p7, uint8_t confirmation )
@@ -151,30 +195,13 @@ void ArduinoMAVLink::SendCommand( uint16_t cmd, float p1, float p2, float p3, fl
   Write( packbuffer, len );
 }
 
-// 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
-void ArduinoMAVLink::SetMode( uint8_t fltMode )
-{
-  mavlink_set_mode_t mode;
-  
-  mode.target_system = sysid;
-  mode.base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-  mode.custom_mode = fltMode;  
-  
-  mavlink_message_t msg;
-	mavlink_msg_set_mode_encode( 255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &mode);
-    
-  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
-  
-  Write( packbuffer, len );
-}
-
-void ArduinoMAVLink::FlyHere( double lat, double lon, double alt )
+void ArduinoMAVLink::SendNavCommand( uint16_t cmd, double lat, double lon, double alt, float p1, float p2, float p3, float p4 )
 {
   mavlink_mission_item_t wp;
   wp.target_system = sysid;
   wp.target_component = compid; // MSG_NAMES.MISSION_ITEM
 
-  wp.command = MAV_CMD_NAV_WAYPOINT;
+  wp.command = cmd;
 
   wp.current = 2; // 0 = no , 2 = guided mode
   wp.autocontinue = 1;
@@ -184,10 +211,10 @@ void ArduinoMAVLink::FlyHere( double lat, double lon, double alt )
   wp.x = lat;
   wp.z = alt;
 
-  wp.param1 = 0;
-  wp.param2 = 0;
-  wp.param3 = 0;
-  wp.param4 = 0;
+  wp.param1 = p1;
+  wp.param2 = p2;
+  wp.param3 = p3;
+  wp.param4 = p4;
 
   wp.seq = 0; // waypoint index at 0
   
