@@ -130,27 +130,34 @@ void ArduinoMAVLink::DoArmDisarm( bool arm )
 void ArduinoMAVLink::DoFlyHere( double lat, double lon, double alt )
 {
   SetMode(GUIDED);
-  SendNavCommand( MAV_CMD_NAV_WAYPOINT, lat, lon, alt );
+  SendNavCommand( MAV_CMD_NAV_WAYPOINT, 2, 0, lat, lon, alt );
 }
 
 void ArduinoMAVLink::DoTakeoff()
 {
-  SendNavCommand( MAV_CMD_NAV_TAKEOFF, 0, 0, 5 /*meters*/ );
-  SetMode(AUTO);
+  SendNavCommand( MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 5 /*meters*/ );
+  SendNavCommand( MAV_CMD_NAV_LOITER_UNLIM, 0, 1, 0, 0, 0 /*meters*/ );
+  SendCommand( MAV_CMD_MISSION_START );
+  //SetMode(AUTO);
 }
 
 void ArduinoMAVLink::DoLand()
 {
   SendCommand( MAV_CMD_NAV_LAND );
-//  SendNavCommand( MAV_CMD_NAV_LAND, 0, 0, 0 );
+//  SendNavCommand( MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0 );
 //  SetMode(AUTO);
 }
 
 void ArduinoMAVLink::DoRTL()
 {
   SendCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH );
-//  SendNavCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0 );
+//  SendNavCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0 );
 //  SetMode(AUTO);  
+}
+
+void ArduinoMAVLink::DoLoiter()
+{
+  SetMode(LOITER);
 }
 
 // 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
@@ -195,7 +202,7 @@ void ArduinoMAVLink::SendCommand( uint16_t cmd, float p1, float p2, float p3, fl
   Write( packbuffer, len );
 }
 
-void ArduinoMAVLink::SendNavCommand( uint16_t cmd, double lat, double lon, double alt, float p1, float p2, float p3, float p4 )
+void ArduinoMAVLink::SendNavCommand( uint16_t cmd, uint8_t current, uint8_t index, double lat, double lon, double alt, float p1, float p2, float p3, float p4 )
 {
   mavlink_mission_item_t wp;
   wp.target_system = sysid;
@@ -203,7 +210,7 @@ void ArduinoMAVLink::SendNavCommand( uint16_t cmd, double lat, double lon, doubl
 
   wp.command = cmd;
 
-  wp.current = 2; // 0 = no , 2 = guided mode
+  wp.current = current; // 0 = no , 2 = guided mode, 3 = change alt
   wp.autocontinue = 1;
 
   wp.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
@@ -216,7 +223,7 @@ void ArduinoMAVLink::SendNavCommand( uint16_t cmd, double lat, double lon, doubl
   wp.param3 = p3;
   wp.param4 = p4;
 
-  wp.seq = 0; // waypoint index at 0
+  wp.seq = index; // waypoint index at 0
   
   mavlink_message_t msg;
   mavlink_msg_mission_item_encode(255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &wp);
@@ -268,8 +275,23 @@ bool ArduinoMAVLink::Received()
           }
         }
         break;
-        case MAVLINK_MSG_ID_COMMAND_LONG:
-        // EXECUTE ACTION
+        case MAVLINK_MSG_ID_COMMAND_ACK:
+        break;
+        case MAVLINK_MSG_ID_MISSION_ACK:
+        break;
+//        case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+//        break;
+        case MAVLINK_MSG_ID_GPS_RAW_INT:
+        {
+          mavlink_gps_raw_int_t gps;
+          mavlink_msg_gps_raw_int_decode(&msg, &gps);
+          lat = gps.lat * 1.0e-7f;
+          lon = gps.lon * 1.0e-7f;
+          alt = gps.alt / 1000.0f;
+          fix_type = gps.fix_type;
+        }
+        break;
+        case MAVLINK_MSG_ID_SYS_STATUS:
         break;
         default:
         //Do nothing
@@ -280,7 +302,7 @@ bool ArduinoMAVLink::Received()
     }
     // And get the next one
   }
-  
+   
   return got;
 }
 
@@ -291,6 +313,18 @@ bool ArduinoMAVLink::isArm()
   return false;
 }
 
+bool ArduinoMAVLink::isInAir()
+{
+  return false;
+}
+
+// ACM2: 0 = Stabilize, 1 = Acro, 2 = Alt Hold, 3 = Auto, 4 = Guided, 5 = Loiter, 6 = RTL
+int8_t ArduinoMAVLink::getMode()
+{
+  if ( (base_mode & MAV_MODE_FLAG_CUSTOM_MODE_ENABLED) != 0 )
+    return custom_mode;
+  return -1;
+}
 /*
 void loop() {
         // The default UART header for your MCU 

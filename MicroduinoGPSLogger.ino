@@ -118,7 +118,7 @@ GPX myGPX;
 #include <SoftwareSerial.h>
 SoftwareSerial mySerial(5, 4);  // RX, TX
 ArduinoMAVLink mavLink(&mySerial);
-uint32_t apmAltitude = 5;
+uint32_t acmAltitude = 5;
 boolean mavlink_initial = false;
 /*
 #if Core_Plus
@@ -545,11 +545,12 @@ void voserial()
 #define STAGE_MENU 2
 #define STAGE_GPS  3  // 
 #define STAGE_CFG  4  // config
-#define STAGE_APM  5  // amp control
+#define STAGE_ACM  5  // amp control
 #define STAGE_ABT  6  // about
 #define STAGE_QUESTION  7  // about
 #define STAGE_MAIN_TOTAL STAGE_QUESTION
-#define STAGE_APM_FOLLOW  STAGE_MAIN_TOTAL+1  // apm follow me
+#define STAGE_ACM_FOLLOW STAGE_MAIN_TOTAL+1  // acm follow me
+#define STAGE_ACM_STATUS STAGE_ACM_FOLLOW+1
 
 
 uint8_t SysStage = STAGE_NONE;
@@ -563,10 +564,10 @@ uint8_t last_key_code = KEY_NONE;
 
 #define MENU_ITEMS 4
 #define MENU_GPS  0 
-#define MENU_APM  1 
+#define MENU_ACM  1 
 #define MENU_CFG  2 
 #define MENU_ABT  3 
-char *menu_strings[MENU_ITEMS] = { "GPS Status", "APM Planner", "Configuration", "About" };
+char *menu_strings[MENU_ITEMS] = { "GPS Status", "ACM Planner", "Configuration", "About" };
 void drawMenu() 
 {
   uint8_t i, h;
@@ -589,13 +590,13 @@ void drawMenu()
   }
 }
 
-#define MENU_APM_ITEMS 4
-#define MENU_APM_ARM      0 
-#define MENU_APM_FOLLOW   1 
-#define MENU_APM_TAKEOFF  2 
-#define MENU_APM_RTL      3 
-char *menu_apm_strings[MENU_APM_ITEMS] = { "Arm", "Follow me", "Takeoff", "RTL" };
-void drawAPMMenu() 
+#define MENU_ACM_ITEMS 4
+#define MENU_ACM_ARM      0 
+#define MENU_ACM_TAKEOFF  1 
+#define MENU_ACM_FOLLOW   2 
+#define MENU_ACM_RTL      3 
+char *menu_acm_strings[MENU_ACM_ITEMS] = { "", "Takeoff", "Follow me", "RTL" };
+void drawACMMenu() 
 {
   uint8_t i, h;
   u8g_uint_t w, d;
@@ -606,14 +607,29 @@ void drawAPMMenu()
   
   h = u8g.getFontAscent()-u8g.getFontDescent();
   w = u8g.getWidth();
-  for( i = 0; i < MENU_APM_ITEMS; i++ ) {
-    d = (w-u8g.getStrWidth(menu_apm_strings[i]))/2;
+  for( i = 0; i < MENU_ACM_ITEMS; i++ ) {
+    d = (w-u8g.getStrWidth(menu_acm_strings[i]))/2;
     u8g.setDefaultForegroundColor();
     if ( i == menu_current ) {
       u8g.drawBox(0, i*h+1, w, h);
       u8g.setDefaultBackgroundColor();
     }
-    u8g.drawStr(d, i*h, menu_apm_strings[i]);
+    if ( i == MENU_ACM_ARM )
+    {
+      if ( mavLink.isArm() )
+        u8g.drawStr(d, i*h, F("Disarm"));
+      else
+        u8g.drawStr(d, i*h, F("Arm"));
+    }
+    else if ( i == MENU_ACM_TAKEOFF )
+    {
+      if ( mavLink.isInAir() )
+        u8g.drawStr(d, i*h, F("Land"));
+      else
+        u8g.drawStr(d, i*h, F("Takeoff"));      
+    }
+    else
+      u8g.drawStr(d, i*h, menu_acm_strings[i]);
   }
 }
 
@@ -669,7 +685,7 @@ void drawAbout()
 #define MENU_QUESTION_NO    0 
 #define MENU_QUESTION_YES   1 
 int8_t question_state = 0;
-char questionTitle[10];
+char questionTitle[30];
 char *menu_question_strings[MENU_QUESTION_ITEMS] = { "No", "Yes" };
 void drawQuestionMenu()
 {
@@ -682,7 +698,7 @@ void drawQuestionMenu()
   
   h = u8g.getFontAscent()-u8g.getFontDescent();
   w = u8g.getWidth();
-  for( i = 0; i < MENU_APM_ITEMS; i++ ) {
+  for( i = 0; i < MENU_ACM_ITEMS; i++ ) {
     d = (w-u8g.getStrWidth(menu_question_strings[i]))/2;
     u8g.setDefaultForegroundColor();
     if ( i == menu_current ) {
@@ -692,8 +708,7 @@ void drawQuestionMenu()
     u8g.drawStr(d, h+i*h, menu_question_strings[i]);
   }  
   
-//  u8g.drawStr(2, 0, questionTitle);
-  u8g.drawStr(2, 0, "Leave ?");  
+  u8g.drawStr(2, 0, questionTitle);
   
 }
 
@@ -725,7 +740,7 @@ void drawFollow()
   u8g.print(F("set Alt.:"));
   setFont_L;
   u8g.setPrintPos(90, 24);  
-  u8g.print(apmAltitude);
+  u8g.print(acmAltitude);
   setFont_M;
 
 
@@ -767,8 +782,8 @@ void prevBtn()
       menu_current = MENU_CFG;
       back2Menu = true;
     break;      
-    case STAGE_APM:
-      menu_current = MENU_APM;   
+    case STAGE_ACM:
+      menu_current = MENU_ACM;   
       back2Menu = true; 
     break;      
     case STAGE_ABT:
@@ -780,9 +795,10 @@ void prevBtn()
       menu_current = 0;
       back2Menu = true;
     break;
-    case STAGE_APM_FOLLOW:
+    case STAGE_ACM_FOLLOW:
       question_state = 0;
       menu_current = MENU_QUESTION_YES;
+      sprintf(questionTitle, "Leave FollowMe Mode?");
       setNextSysStage(STAGE_QUESTION);
     break;
     default:
@@ -803,9 +819,9 @@ void nextBtn()
         noSTA_draw = true;
         setNextSysStage(STAGE_GPS);
       break;
-      case MENU_APM:
+      case MENU_ACM:
         menu_current = 0;
-        setNextSysStage(STAGE_APM);
+        setNextSysStage(STAGE_ACM);
       break;
       case MENU_CFG:
         menu_current = 0;
@@ -816,25 +832,34 @@ void nextBtn()
       break;
     }
   }
-  else if ( SysStage == STAGE_APM )
+  else if ( SysStage == STAGE_ACM )
   {    
     switch(menu_current)
     {
-      case MENU_APM_ARM:
+      case MENU_ACM_ARM:
+        mavLink.DoArmDisarm( !mavLink.isArm() );
       break;
-      case MENU_APM_FOLLOW:
-        setNextSysStage(STAGE_APM_FOLLOW);
+      case MENU_ACM_FOLLOW:
+        setNextSysStage(STAGE_ACM_FOLLOW);
         if ( !b_read_gps )
         {
           b_read_gps = true;
           writeCFG();
         }
       break;
-      case MENU_APM_TAKEOFF:
+      case MENU_ACM_TAKEOFF:
+        if ( mavLink.isInAir() )
+          mavLink.DoLand();
+        else
+          mavLink.DoTakeoff();
       break;
-      case MENU_APM_RTL:
+      case MENU_ACM_RTL:
+        mavLink.DoRTL();
       break;
     }
+    
+    if ( menu_current != MENU_ACM_FOLLOW )
+      setNextSysStage(STAGE_ACM_STATUS);
     menu_redraw_required = 1;    
   }
   else if ( SysStage == STAGE_CFG )
@@ -870,7 +895,7 @@ void selectBtn()
 {
   if ( SysStage == STAGE_MENU 
     || SysStage == STAGE_CFG
-    || SysStage == STAGE_APM )
+    || SysStage == STAGE_ACM )
     nextBtn();
 }
 
@@ -974,7 +999,7 @@ void updateQuestion()
   }
 }
 
-// apm handle ===================================================
+// acm handle ===================================================
 void updateAltitude() 
 {
   if ( uiKeyCode != KEY_NONE && last_key_code == uiKeyCode ) 
@@ -987,15 +1012,15 @@ void updateAltitude()
   {
     case KEY_UP:
       menu_redraw_required = 1;
-      apmAltitude++;
-      if ( apmAltitude > 30 )
-        apmAltitude = 30;
+      acmAltitude++;
+      if ( acmAltitude > 30 )
+        acmAltitude = 30;
       break;
     case KEY_DOWN:
       menu_redraw_required = 1;
-      apmAltitude--;
-      if ( apmAltitude < 1 )
-        apmAltitude = 1;
+      acmAltitude--;
+      if ( acmAltitude < 1 )
+        acmAltitude = 1;
       break;
     case KEY_PREV:
       prevBtn();
@@ -1177,13 +1202,13 @@ void loop()
     }
     updateMenu();
   }
-  else if ( SysStage == STAGE_APM )
+  else if ( SysStage == STAGE_ACM )
   {
     if (  menu_redraw_required != 0 ) 
     {
       u8g.firstPage();
       do  {
-        drawAPMMenu();
+        drawACMMenu();
       } while( u8g.nextPage() );
       menu_redraw_required = 0;
     }
@@ -1231,14 +1256,13 @@ void loop()
     }    
     updateQuestion();            
   }
-  else if ( SysStage == STAGE_APM_FOLLOW )
+  else if ( SysStage == STAGE_ACM_FOLLOW )
   {    
     if ( question_state == 0 )
-    {
-      
+    {      
       if (STA)
       {
-        mavLink.DoFlyHere(f_latitude, f_longitude, apmAltitude);
+        mavLink.DoFlyHere(f_latitude, f_longitude, acmAltitude);
         menu_redraw_required = 1;
       }
       
@@ -1259,9 +1283,9 @@ void loop()
       }
       else if ( question_state > 0 ) // Yes
       {
-        // CancelFollowMe();
-        menu_current = MENU_APM_FOLLOW;    
-        setNextSysStage(STAGE_APM);     
+        mavLink.DoLoiter();
+        menu_current = MENU_ACM_FOLLOW;    
+        setNextSysStage(STAGE_ACM);     
         LastSysStage = STAGE_MENU;
       }
       question_state = 0;
@@ -1270,8 +1294,8 @@ void loop()
 
   if ( mavlink_initial )
   {
-    if ( SysStage == STAGE_APM 
-      || SysStage == STAGE_APM_FOLLOW )
+    if ( SysStage == STAGE_ACM 
+      || SysStage == STAGE_ACM_FOLLOW )
     {
       mavLink.Received();
     }

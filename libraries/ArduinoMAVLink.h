@@ -49,11 +49,14 @@ public:
   void SetMode( uint8_t fltMode );
   bool Received(); 
   bool isArm();
+  bool isInAir();
+  int8_t getMode();
   void DoFlyHere( double lat, double lon, double alt );  
   void DoArmDisarm( bool arm );
   void DoTakeoff();
   void DoLand();
   void DoRTL();
+  void DoLoiter();
   
 protected:
 
@@ -63,7 +66,7 @@ protected:
 private:
   void StatusCallback( uint8_t status, uint32_t msg );
   void SendCommand( uint16_t cmd, float p1 = 0, float p2 = 0, float p3 = 0, float p4 = 0, float p5 = 0, float p6 = 0, float p7 = 0, uint8_t confirmation = 0);
-  void SendNavCommand( uint16_t cmd, double lat, double lon, double alt, float p1 = 0, float p2 = 0, float p3 = 0, float p4 = 0 );
+  void SendNavCommand( uint16_t cmd, uint8_t current, uint8_t index, double lat, double lon, double alt, float p1 = 0, float p2 = 0, float p3 = 0, float p4 = 0 );
   void Write( uint8_t * buffer, uint16_t length );
 
   //static char _receive_buffer[_ML_MAX_BUFF];   
@@ -79,6 +82,11 @@ private:
   uint32_t custom_mode;
   uint8_t base_mode;
   uint8_t system_status;
+  
+  int32_t lat; ///< Latitude (WGS84), in degrees * 1E7
+  int32_t lon; ///< Longitude (WGS84), in degrees * 1E7
+  float alt; ///< Altitude (WGS84), in meters * 1000 (positive for up)
+  uint8_t fix_type; ///< 0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK. Some applications will not use the value of this field unless it is at least two, so always correctly fill in the fix.  
   
   uint8_t error;
 };
