@@ -20,11 +20,8 @@
 #define MAVLINK_COMM_NUM_BUFFERS 1
 #include "include/mavlink/v1.0/mavlink_types.h"
 
-/// MAVLink stream used for HIL interaction
+/// MAVLink stream used for Copter interaction
 extern BetterStream	*mavlink_comm_0_port;
-
-/// MAVLink stream used for ground control communication
-extern BetterStream	*mavlink_comm_1_port;
 
 /// MAVLink system definition
 extern mavlink_system_t mavlink_system;
@@ -36,12 +33,9 @@ extern mavlink_system_t mavlink_system;
 ///
 static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 {
-    switch(chan) {
+  switch(chan) {
 	case MAVLINK_COMM_0:
 		mavlink_comm_0_port->write(ch);
-		break;
-	case MAVLINK_COMM_1:
-		mavlink_comm_1_port->write(ch);
 		break;
 	default:
 		break;
@@ -55,14 +49,11 @@ static inline void comm_send_ch(mavlink_channel_t chan, uint8_t ch)
 ///
 static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 {
-    uint8_t data = 0;
+  uint8_t data = 0;
 
-    switch(chan) {
+  switch(chan) {
 	case MAVLINK_COMM_0:
 		data = mavlink_comm_0_port->read();
-		break;
-	case MAVLINK_COMM_1:
-		data = mavlink_comm_1_port->read();
 		break;
 	default:
 		break;
@@ -76,13 +67,10 @@ static inline uint8_t comm_receive_ch(mavlink_channel_t chan)
 /// @returns		Number of bytes available
 static inline uint16_t comm_get_available(mavlink_channel_t chan)
 {
-    uint16_t bytes = 0;
-    switch(chan) {
+  uint16_t bytes = 0;
+  switch(chan) {
 	case MAVLINK_COMM_0:
 		bytes = mavlink_comm_0_port->available();
-		break;
-	case MAVLINK_COMM_1:
-		bytes = mavlink_comm_1_port->available();
 		break;
 	default:
 		break;
@@ -97,12 +85,9 @@ static inline uint16_t comm_get_available(mavlink_channel_t chan)
 /// @returns		Number of bytes available, -1 for error
 static inline int comm_get_txspace(mavlink_channel_t chan)
 {
-    switch(chan) {
+  switch(chan) {
 	case MAVLINK_COMM_0:
 		return mavlink_comm_0_port->txspace();
-		break;
-	case MAVLINK_COMM_1:
-		return mavlink_comm_1_port->txspace();
 		break;
 	default:
 		break;
