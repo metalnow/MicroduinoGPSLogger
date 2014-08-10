@@ -1,4 +1,60 @@
-//lat_lon_transform================================
+void gps_databegin()
+{
+  char c = gps.read();
+  // if you want to debug, this is a good time to do it!
+  // if a sentence is received, we can check the checksum, parse it...
+  if (gps.newNMEAreceived()) {
+    // a tricky thing here is if we print the NMEA sentence, or data
+    // we end up not listening and catching other sentences!
+    // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
+    if (!gps.parse(gps.lastNMEA())) // this also sets the newNMEAreceived() flag to false
+      return; // we can fail to parse a sentence in which case we should just wait for another
+  }
+}
+
+#define init_updata 500			//gps update interval
+unsigned long gps_timer = millis();
+
+void gps_dataread()
+{
+  if (gps_timer > millis()) gps_timer = millis();
+  if (millis() - gps_timer > init_updata)
+  {
+    gps_timer = millis(); // reset the timer
+
+    itime[0]=gps.hour;
+    itime[1]=gps.minute;
+    itime[2]=gps.seconds;
+    itime[3]=gps.milliseconds;
+
+    idate[0]=gps.year;
+    idate[1]=gps.month;
+    idate[2]=gps.day;
+
+    f_fixquality=gps.fixquality;	//get signal quality
+    STA=gps.fix;					//GPS status
+
+    //if (gps.fix)		// while GPS is online
+    {
+      f_latitude=gps.latitude;
+      f_longitude=gps.longitude;
+      c_lat=gps.lat;
+      c_lon=gps.lon;
+
+      lat_lon_transform();		// trasform latitude and longitude
+
+      f_Speed=1.852*gps.speed;		// transform speed
+      i_Speed[0]=int(f_Speed*10)%10;	// formating speed
+      i_Speed[1]=int(f_Speed);		// formating speed
+
+      f_Height=gps.altitude;		// altitude
+
+      i_satellites=gps.satellites;      // number of satellite
+
+    }
+  }
+}
+
 void lat_lon_transform()
 {
   f_latitude=(int(f_latitude)/100)+((int(f_latitude)%100)/60.0)+((f_latitude-int(f_latitude))/60.0);
@@ -12,57 +68,44 @@ void lat_lon_transform()
     f_longitude=-f_longitude;
 }
 
-//GPS========================================
-void vogps_databegin()
+#define init_serial 5000		//Serial writing interval
+unsigned long time_serial = millis();
+
+void gps_serial()
 {
-  char c = GPS.read();
-  // if you want to debug, this is a good time to do it!
-  // if a sentence is received, we can check the checksum, parse it...
-  if (GPS.newNMEAreceived()) {
-    // a tricky thing here is if we print the NMEA sentence, or data
-    // we end up not listening and catching other sentences!
-    // so be very wary if using OUTPUT_ALLDATA and trytng to print out data
-    if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
-      return; // we can fail to parse a sentence in which case we should just wait for another
-  }
-}
+  if (time_serial > millis()) time_serial = millis();
+  if (millis() - time_serial <= init_serial)
+    return;
 
-void vogps_dataread()
-{
-  if (timer > millis()) timer = millis();
-  if (millis() - timer > init_updata)
-  {
-    timer = millis(); // reset the timer
+  time_serial = millis(); // reset the timer
 
-    itime[0]=GPS.hour;
-    itime[1]=GPS.minute;
-    itime[2]=GPS.seconds;
-    itime[3]=GPS.milliseconds;
+  Serial.print("fix:");
+  Serial.println(STA);
 
-    idate[0]=GPS.year;
-    idate[1]=GPS.month;
-    idate[2]=GPS.day;
+  Serial.print("Speed:");
+  Serial.print(i_Speed[1]);
+  Serial.print(".");
+  Serial.print(i_Speed[0]);
+  Serial.print("\t");
+  
+  Serial.print("Lat.: ");
+  Serial.print( c_lat);
+  Serial.print(" ");
+  Serial.print( f_latitude,8);
+  Serial.print("\t");
 
-    f_fixquality=GPS.fixquality;	//get signal quality
-    STA=GPS.fix;					//GPS status
+  Serial.print("Lon.: ");
+  Serial.print( c_lon);
+  Serial.print(" ");
+  Serial.print(f_longitude,8);
+  Serial.print("\t");
 
-    if (STA)		// while GPS is online
-    {
-      f_latitude=GPS.latitude;
-      f_longitude=GPS.longitude;
-      c_lat=GPS.lat;
-      c_lon=GPS.lon;
+  Serial.print("ELE.:");
+  Serial.print(int(f_Height));
+  Serial.print("\t");
 
-      lat_lon_transform();		// trasform latitude and longitude
-
-      f_Speed=1.852*GPS.speed;		// transform speed
-      i_Speed[0]=int(f_Speed*10)%10;	// formating speed
-      i_Speed[1]=int(f_Speed);		// formating speed
-
-      f_Height=GPS.altitude;		// altitude
-
-      i_satellites=GPS.satellites;      // number of satellite
-
-    }
-  }
+  Serial.print("Sat.:");
+  Serial.print(i_satellites);    
+  
+  Serial.print("\n");
 }
