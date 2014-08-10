@@ -337,6 +337,54 @@ void GPSDraw(void)
 uint8_t uiKeyCodeFirst = KEY_NONE;
 uint8_t uiKeyCodeSecond = KEY_NONE;
 uint8_t uiKeyCode = KEY_NONE;
+/*
+// 644 16M 5v
+#define LT_UPPER_CODE 40
+#define RT_LOWER_CODE 55
+#define RT_UPPER_CODE 65
+#define UP_LOWER_CODE 135
+#define UP_UPPER_CODE 145
+#define DN_LOWER_CODE 230
+#define DN_UPPER_CODE 240
+#define MD_LOWER_CODE 360
+#define MD_UPPER_CODE 375
+#define SG_LOWER_CODE 365
+#define SG_UPPER_CODE 375
+#define DB_LOWER_CODE 240
+#define DB_UPPER_CODE 250
+*/
+
+// 1284 8M 3.3V
+#define LT_UPPER_CODE 50
+#define RT_LOWER_CODE 85
+#define RT_UPPER_CODE 95
+#define UP_LOWER_CODE 195
+#define UP_UPPER_CODE 205
+#define DN_LOWER_CODE 320
+#define DN_UPPER_CODE 330
+#define MD_LOWER_CODE 505
+#define MD_UPPER_CODE 515
+#define SG_LOWER_CODE 505
+#define SG_UPPER_CODE 515
+#define DB_LOWER_CODE 335
+#define DB_UPPER_CODE 345
+
+/*
+// 1284p 16M 5v
+#define LT_UPPER_CODE 40
+#define RT_LOWER_CODE 60
+#define RT_UPPER_CODE 70
+#define UP_LOWER_CODE 140
+#define UP_UPPER_CODE 150
+#define DN_LOWER_CODE 235
+#define DN_UPPER_CODE 245
+#define MD_LOWER_CODE 375
+#define MD_UPPER_CODE 385
+#define SG_LOWER_CODE 375
+#define SG_UPPER_CODE 385
+#define DB_LOWER_CODE 245
+#define DB_UPPER_CODE 255
+*/
 void voCubeV1Key()
 {
   if (time_key > millis()) time_key = millis();
@@ -344,24 +392,31 @@ void voCubeV1Key()
   {  
     uiKeyCodeSecond = uiKeyCodeFirst;
     int button2 = analogRead(A6);
-    if(button2>365&&button2<375)
+    if(button2 > SG_LOWER_CODE && button2 < SG_UPPER_CODE)
       uiKeyCodeFirst=KEY_SINGLE;  // single
-    else if(button2>240&&button2<250)
+    else if(button2 > DB_LOWER_CODE && button2 < DB_UPPER_CODE)
       uiKeyCodeFirst=KEY_DOUBLE;  // double
     
     int button5 = analogRead(A7);
-    if(button5<40)  //left
+    if(button5 < LT_UPPER_CODE)  //left
       uiKeyCodeFirst=KEY_LEFT;
-    else if(button5>55&&button5<65) // right
+    else if(button5 > RT_LOWER_CODE && button5 < RT_UPPER_CODE) // right
       uiKeyCodeFirst=KEY_RIGHT;
-    else if(button5>135&&button5<145) // up
+    else if(button5 > UP_LOWER_CODE && button5 < UP_UPPER_CODE) // up
       uiKeyCodeFirst=KEY_UP;
-    else if(button5>230&&button5<240) // down
+    else if(button5 > DN_LOWER_CODE && button5 < DN_UPPER_CODE) // down
       uiKeyCodeFirst=KEY_DOWN;
-    else if(button5>360&&button5<375) // middle
+    else if(button5 > MD_LOWER_CODE && button5 < MD_UPPER_CODE) // middle
       uiKeyCodeFirst=KEY_SELECT;
     else
       uiKeyCodeFirst=KEY_NONE;   
+      
+    /*
+    Serial.print(button2);
+    Serial.print(",");
+    Serial.println(button5);
+    delay(500);
+    */
       
     if ( uiKeyCodeSecond == uiKeyCodeFirst )
       uiKeyCode = uiKeyCodeFirst;
@@ -1105,10 +1160,97 @@ void writeCFG()
   EEPROM.write(eeprom_addr, b_debug_serail);
   eeprom_addr++;  
 }
+#include <ArduinoMAVLinkHeader.h>
 
 void InitMavlink()
 {  
+  /*
   Serial.println(F("init mvalink"));
+
+  //char _receive_buffer[256];
+  mavlink_message_t msg;
+  mavlink_status_t status;
+  mavlink_heartbeat_t hb;
+  
+  uint8_t bufIdx = 0;
+  uint8_t headIdx = 0;
+  uint8_t hb_count = 0;
+  timer = millis();
+  while (hb_count < 2)
+  {  
+    unsigned long elapsed_time = millis() - timer;
+    if ( elapsed_time > 30000 )      
+    {
+      Serial.println("time out");
+      return;
+    }
+    
+    while (mySerial.available() > 0) 
+    {
+      Serial.print(bufIdx);
+      uint8_t c = mySerial.read();
+      //_receive_buffer[bufIdx++] = c;
+      Serial.print(" mavlink get: ");
+      Serial.println(int(c));
+      if (c==MAVLINK_STX)
+        headIdx = bufIdx-1;
+      // Try to get a new message
+      if(mavlink_parse_char(MAVLINK_COMM_0, c, &msg, &status)) 
+      {
+        Serial.print("parsing: ");
+        Serial.print(msg.msgid);
+        Serial.print(" ");
+        Serial.print(headIdx);
+        Serial.print(" ");
+        Serial.println(bufIdx);        
+        // Handle message    
+        switch(msg.msgid)
+        {
+          case MAVLINK_MSG_ID_HEARTBEAT:
+          {
+            //_receive_buffer[bufIdx] = '\0';
+            //memcpy( &hb, &_receive_buffer[headIdx+6], MAVLINK_MSG_ID_HEARTBEAT_LEN );
+            mavlink_msg_heartbeat_decode(&msg, &hb);
+            //bufIdx = 0;
+            //char * p_msg = (char *)&msg;
+            //char * p_hb = (char*)&hb;
+            //for(int i = 0; i < MAVLINK_MSG_ID_HEARTBEAT_LEN; ++i )
+            //  p_hb[i] = p_msg[i];
+            //hb = (mavlink_heartbeat_t *)&_receive_buffer[headIdx+6];
+            
+            
+            Serial.print("Hearbeat: ");
+            Serial.print(hb.type);
+            Serial.print(" ");
+            Serial.print(hb.mavlink_version);
+            Serial.print(" ");
+            Serial.print(hb.autopilot);
+            Serial.print(" ");
+            Serial.print(msg.sysid);
+            Serial.print(" ");
+            Serial.print(msg.compid);
+            Serial.print(" ");
+            Serial.print(msg.seq);
+            Serial.println(" ");    
+            hb_count= 2;        
+          }
+          break;
+          default:
+          //Do nothing
+          break;
+        }
+        bufIdx = 0;
+      }
+      
+      if ( bufIdx > 255 )
+        bufIdx = 0;
+      // And get the next one
+    }
+  }  
+  
+  mavlink_initial = true;
+  return;  
+  */
   delay(1000);
   if ( mavLink.Initialize() )
   {
