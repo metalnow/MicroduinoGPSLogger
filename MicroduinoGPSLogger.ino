@@ -44,9 +44,11 @@ void setup()
   // setup mavlink port
   mavlink_comm_0_port = &Serial;  
   
+  Serial.println("init i2c");
   i2c_init();
   delay(100);
   // LCD
+  Serial.println("init LCD");
   initLCD();
   
   // Startup MAVLink timers  

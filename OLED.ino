@@ -15,7 +15,7 @@ char digit1(uint16_t v)     { return '0' + v       -  (v/10)    * 10; }
 // #  i2c OLED display funtion primitives #
 // ########################################
 /* Contributed  by howardhb - howard@automatrix.co.za*/
-#define OLED_address   0x78     // OLED at address 0x3C in 7bit, 0x78 in 8bit form 
+#define OLED_address   0x3c
 // 6 byte font
 char LINE_FILL_STRING[] = "                      "; // Used by clear_OLED() 128 bits / 6 bytes = 21 chars per row  
 static char buffer; // buffer to read bytes from ROM, using pgm_read_byte macro. NB! avr/pgmspace.h must be included prog_uchar LOGO[] PROGMEM = {  // My first attempt to flash a logo....
@@ -213,7 +213,7 @@ prog_uchar myFont[][6] PROGMEM = {      // Refer to "Times New Roman" Font Datab
 
 void i2c_OLED_send_cmd(uint8_t command){
   TWBR = ((16000000L / 400000L) - 16) / 2;   // change the I2C clock rate
-  i2c_writeReg(OLED_address, 0x80, (uint8_t)command);
+  i2c_writeReg(OLED_address, 0x00, (uint8_t)command);
 }
    
 void i2c_OLED_send_byte(uint8_t val){
