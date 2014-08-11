@@ -105,7 +105,7 @@ class GPS {
   uint8_t LOCUS_type, LOCUS_mode, LOCUS_config, LOCUS_interval, LOCUS_distance, LOCUS_speed, LOCUS_status, LOCUS_percent;
  private:
   uint8_t parseResponse(char *response);
- 
+  boolean paused;
 };
 
 

@@ -12,6 +12,7 @@
 #include <GCS_MAVLink.h>
 #include "GPS.h"
 #include "GPS_Vars.h"
+#include "MAVLink_Vars.h"
 
 #define TELEMETRY_SPEED  57600  // How fast our MAVLink telemetry is coming to Serial port
 #define GPS_SPEED  38400 
@@ -42,6 +43,18 @@ void loop()
   gps_dataread();
   gps_serial();
   
+  if(enable_mav_request == 1){//Request rate control
+      for(int n = 0; n < 3; n++){
+          request_mavlink_rates();//Three times to certify it will be readed
+          delay(50);
+      }
+      enable_mav_request = 0;
+      delay(2000);
+      waitingMAVBeats = 0;
+      lastMAVBeat = millis();//Preventing error from delay sensing
+  }
+   
+  read_mavlink();
   timer.Run();
 }
 
