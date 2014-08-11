@@ -78,29 +78,10 @@ static inline uint16_t comm_get_available(mavlink_channel_t chan)
     return bytes;
 }
 
-
-/// Check for available transmit space on the nominated MAVLink channel
-///
-/// @param chan		Channel to check
-/// @returns		Number of bytes available, -1 for error
-static inline int comm_get_txspace(mavlink_channel_t chan)
-{
-  switch(chan) {
-	case MAVLINK_COMM_0:
-		return mavlink_comm_0_port->txspace();
-		break;
-	default:
-		break;
-	}
-    return -1;
-}
-
 #define MAVLINK_USE_CONVENIENCE_FUNCTIONS
 #include "include/mavlink/v1.0/ardupilotmega/mavlink.h"
 
 uint8_t mavlink_check_target(uint8_t sysid, uint8_t compid);
 
-// return a MAVLink variable type given a AP_Param type
-uint8_t mav_var_type(enum ap_var_type t);
 
 #endif // GCS_MAVLink_h

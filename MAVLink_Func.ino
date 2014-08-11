@@ -3,3 +3,4 @@ boolean getBit(byte Reg, byte whichBit) {
     State = Reg & (1 << whichBit);
     return State;
 }
+

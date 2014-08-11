@@ -4,15 +4,27 @@
 #undef PSTR 
 #define PSTR(s) (__extension__({static prog_char __c[] PROGMEM = (s); &__c[0];})) 
 
+#undef PGM_P
+#define PGM_P prog_char *
+
 #include "define.h"
 
 #include <FastSerial.h>
+#include <math.h>
+#include <inttypes.h>
+#include <avr/pgmspace.h>
+#if defined(ARDUINO) && ARDUINO >= 100
+#include "Arduino.h"
+#else
+#include "wiring.h"
+#endif
 #include <EEPROM.h>
 #include <SimpleTimer.h>
 #include <GCS_MAVLink.h>
 #include "GPS.h"
 #include "GPS_Vars.h"
 #include "MAVLink_Vars.h"
+#include "OLED_Vars.h"
 
 #define TELEMETRY_SPEED  57600  // How fast our MAVLink telemetry is coming to Serial port
 #define GPS_SPEED  38400 
@@ -31,6 +43,11 @@ void setup()
   
   // setup mavlink port
   mavlink_comm_0_port = &Serial;  
+  
+  i2c_init();
+  delay(100);
+  // LCD
+  initLCD();
   
   // Startup MAVLink timers  
   timer.Set(&OnTimer, 120);
@@ -52,9 +69,10 @@ void loop()
       delay(2000);
       waitingMAVBeats = 0;
       lastMAVBeat = millis();//Preventing error from delay sensing
-  }
+  }  
    
   read_mavlink();
+  loopLCD();
   timer.Run();
 }
 

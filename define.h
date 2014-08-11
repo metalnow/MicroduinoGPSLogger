@@ -1,3 +1,6 @@
+#ifndef _DEFINE_H
+#define _DEFINE_H
+
 #define u8g_logo_width 128
 #define u8g_logo_height 18
 
@@ -44,3 +47,6 @@
 #define MENU_QUESTION_ITEMS 2
 #define MENU_QUESTION_NO    0 
 #define MENU_QUESTION_YES   1 
+
+
+#endif
