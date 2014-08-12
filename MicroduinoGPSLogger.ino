@@ -44,6 +44,8 @@ void setup()
   // setup mavlink port
   mavlink_comm_0_port = &Serial;  
   
+  
+
   i2c_init();
   delay(100);
   // LCD
@@ -72,7 +74,7 @@ void loop()
   }  
    
   read_mavlink();
-  loopLCD();
+  //loopLCD();
   timer.Run();
 }
 

@@ -48,6 +48,7 @@ boolean GPS::parse(char *nmea) {
 
   // look for a few common sentences
   if (strstr(nmea, "$GPGGA")) {
+    //Serial.println("GPGGA");
     // found GGA
     char *p = nmea;
     // get time
@@ -98,6 +99,11 @@ boolean GPS::parse(char *nmea) {
   }
   if (strstr(nmea, "$GPRMC")) {
    // found RMC
+    //Serial.println("----");
+    //Serial.println("foundGPRMC");
+    //Serial.println((char *)lastline);
+    //Serial.println("----");
+    
     char *p = nmea;
 
     // get time
@@ -164,7 +170,9 @@ char GPS::read(void) {
   char c = 0;
   
   if (paused) return c;
-
+  
+  if ( Serial1.available() == 0 )
+   return 0;     
   c = Serial1.read();
 
   //Serial.println(c);
@@ -183,10 +191,11 @@ char GPS::read(void) {
       currentline = line1;
       lastline = line2;
     }
-
-    //Serial.println("----");
-    //Serial.println((char *)lastline);
-    //Serial.println("----");
+    /*
+    Serial.println("----");
+    Serial.println((char *)lastline);
+    Serial.println("----");
+    */
     lineidx = 0;
     recvdflag = true;
   }

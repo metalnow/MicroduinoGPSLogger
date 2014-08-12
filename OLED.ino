@@ -224,7 +224,32 @@ void i2c_OLED_send_byte(uint8_t val){
 }
    
 void  i2c_OLED_init(void){
-    i2c_OLED_send_cmd(0xae);		//display off
+    i2c_OLED_send_cmd(SSD1306_DISPLAYOFF);		//display off // 0xAE
+    i2c_OLED_send_cmd(SSD1306_SETDISPLAYCLOCKDIV);      // 0xD5
+    i2c_OLED_send_cmd(0x80);                            // the suggested ratio 0x80
+    i2c_OLED_send_cmd(SSD1306_SETMULTIPLEX);            // 0xA8
+    i2c_OLED_send_cmd(0x3f);
+    i2c_OLED_send_cmd(SSD1306_SETDISPLAYOFFSET);        // 0xD3
+    i2c_OLED_send_cmd(0x0);                             // no offset
+    i2c_OLED_send_cmd(SSD1306_SETSTARTLINE | 0x0);      // line #0
+    i2c_OLED_send_cmd(SSD1306_CHARGEPUMP);              // 0x8D
+    i2c_OLED_send_cmd(0x14);
+    i2c_OLED_send_cmd(SSD1306_MEMORYMODE);              // 0x20
+    i2c_OLED_send_cmd(0x00);                            // 0x0 act like ks0108
+    i2c_OLED_send_cmd(SSD1306_SEGREMAP | 0x01);
+    i2c_OLED_send_cmd(SSD1306_COMSCANDEC);
+    i2c_OLED_send_cmd(SSD1306_SETCOMPINS);              // 0xDA
+    i2c_OLED_send_cmd(0x12);
+    i2c_OLED_send_cmd(SSD1306_SETCONTRAST);             // 0x81
+    i2c_OLED_send_cmd(0xcf);
+    i2c_OLED_send_cmd(SSD1306_SETPRECHARGE);            // 0xd9
+    i2c_OLED_send_cmd(0xf1);
+    i2c_OLED_send_cmd(SSD1306_SETVCOMDETECT);           // 0xDB
+    i2c_OLED_send_cmd(0x40);
+    i2c_OLED_send_cmd(SSD1306_DISPLAYALLON_RESUME);     // 0xA4
+    i2c_OLED_send_cmd(SSD1306_NORMALDISPLAY);           // 0xA6
+    i2c_OLED_send_cmd(SSD1306_DISPLAYON);	        //display on    
+    /*
     i2c_OLED_send_cmd(0xa4);	        //SET All pixels OFF
 //    i2c_OLED_send_cmd(0xa5);	          //SET ALL pixels ON
     delay(50);
@@ -240,7 +265,7 @@ void  i2c_OLED_init(void){
     i2c_OLED_send_cmd(0xdf);            // contrast value (0 dull to 255 bright)
     delay(20);
     i2c_OLED_send_cmd(0xaf);	        //display on
-    delay(20);
+    delay(20);*/
 }
 
 void i2c_OLED_send_char(unsigned char ascii){
