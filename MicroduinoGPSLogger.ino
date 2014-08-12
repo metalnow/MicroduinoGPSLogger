@@ -8,7 +8,6 @@
 #define PGM_P prog_char *
 
 #include "define.h"
-
 #include <FastSerial.h>
 #include <math.h>
 #include <inttypes.h>
@@ -19,6 +18,7 @@
 #include "wiring.h"
 #endif
 #include <EEPROM.h>
+#include "config.h"
 #include <SimpleTimer.h>
 #include <GCS_MAVLink.h>
 #include "GPS.h"
@@ -44,11 +44,9 @@ void setup()
   // setup mavlink port
   mavlink_comm_0_port = &Serial;  
   
-  Serial.println("init i2c");
   i2c_init();
   delay(100);
   // LCD
-  Serial.println("init LCD");
   initLCD();
   
   // Startup MAVLink timers  
