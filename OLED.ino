@@ -3,6 +3,7 @@
 // ************************************************************************************************************
 // LCD & display & monitoring
 // ************************************************************************************************************
+static char line1[17],line2[17];
 
 char digit10000(uint16_t v) { return '0' + v / 10000; }
 char digit1000(uint16_t v)  { return '0' + v / 1000 - (v/10000) * 10; }
@@ -17,7 +18,6 @@ char digit1(uint16_t v)     { return '0' + v       -  (v/10)    * 10; }
 #define OLED_address   0x78     // OLED at address 0x3C in 7bit, 0x78 in 8bit form 
 // 6 byte font
 char LINE_FILL_STRING[] = "                      "; // Used by clear_OLED() 128 bits / 6 bytes = 21 chars per row  
-unsigned char CHAR_FORMAT = 0;
 static char buffer; // buffer to read bytes from ROM, using pgm_read_byte macro. NB! avr/pgmspace.h must be included prog_uchar LOGO[] PROGMEM = {  // My first attempt to flash a logo....
 prog_uchar LOGO[] PROGMEM = {  // logo....
 0x00, 0x02, 0xFE, 0xFE, 0x0E, 0x7C, 0xF0, 0xC0, 0x00, 0x80, 0xE0, 0x7C, 0x0E, 0xFE, 0xFE, 0xFE,
@@ -211,9 +211,6 @@ prog_uchar myFont[][6] PROGMEM = {      // Refer to "Times New Roman" Font Datab
    {0x30,0x48,0x45,0x40,0x20,0x00},      //   (121)  ? - 0x00BF Inverted Question Mark
 };  
 
-// ************************************************************************************************************
-
-/* ------------------------------------------------------------------ */
 void i2c_OLED_send_cmd(uint8_t command){
   TWBR = ((16000000L / 400000L) - 16) / 2;   // change the I2C clock rate
   i2c_writeReg(OLED_address, 0x80, (uint8_t)command);
@@ -248,23 +245,19 @@ void i2c_OLED_send_char(unsigned char ascii){
     unsigned char i;
     for(i=0;i<6;i++){
       buffer = pgm_read_byte(&(myFont[ascii - 32][i])); // call the macro to read ROM
-      buffer ^= CHAR_FORMAT;  // apply
       i2c_OLED_send_byte(buffer);
     }
-    i2c_OLED_send_byte(CHAR_FORMAT);
 }  
 
 void i2c_OLED_send_string(const char *string){  // sends a string of chars untill null terminator
-  unsigned char i=0;
-    while(*string){
+    unsigned char i=0;
+      while(*string){
       for(i=0;i<6;i++){
-         buffer = pgm_read_byte(&(myFont[(*string)- 32][i])); // call the macro to read ROM
-         buffer ^= CHAR_FORMAT;
-         i2c_OLED_send_byte((unsigned char)buffer); 
-      } 
-      i2c_OLED_send_byte(CHAR_FORMAT);
-      *string++;
-     }
+           buffer = pgm_read_byte(&(myFont[(*string)- 32][i])); // call the macro to read ROM
+           i2c_OLED_send_byte((unsigned char)buffer); 
+          } 
+          *string++;
+       }
 }
 
 void i2c_OLED_send_logo(void){
@@ -321,11 +314,7 @@ void i2c_OLED_set_line(byte row) {   // goto the beginning of a single row, comp
 }
 
 /* ------------------------------------------------------------------ */
-void LCDattributesBold() {/*CHAR_FORMAT = 0b01111111; */}
-void LCDattributesReverse() {CHAR_FORMAT = 0b01111111; }
-void LCDattributesOff() {CHAR_FORMAT = 0; }
-void LCDalarmAndReverse() {LCDattributesReverse(); }
-
+// MultiWii functions 
 void LCDprint(uint8_t i) {
   i2c_OLED_send_char(i); 
 }
@@ -367,9 +356,7 @@ void loopLCD()
 
   if (refreshLCD) 
   {
-    refreshScreen();
     refreshLCD = 0;
   }
   
-  updateMenu();
 }

@@ -14,8 +14,4 @@ static uint8_t LastSysStage = STAGE_NONE;
 
 static int16_t  i2c_errors_count = 0;
 
-static char line1[17],line2[17];
-
-#define LCD_FLUSH {/*UartSendData();*/ delayMicroseconds(20000); }
-
 #endif
