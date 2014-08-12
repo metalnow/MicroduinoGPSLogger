@@ -131,6 +131,49 @@ page_desc_t __ACM_RTL     = {&acm_rtl_menu_ptr_table, 1};
 // ************************************************************************************************************
 void __drawGPS( void * p )
 {
+  char buffer[5];
+
+  LCDclear();
+  LCDsetLine(1);
+  LCDprintChar("Speed:");
+  if ( STA )
+  {
+    String speed = String(i_Speed[1]) + "." + String(i_Speed[0]);
+    speed.toCharArray(line1, speed.length());
+    LCDprintChar(line1);    
+  }
+  else
+    LCDprintChar("N/A");
+    
+  LCDsetLine(2);
+  LCDprintChar("Lat.: ");  
+  LCDprint(c_lat);
+  LCDprint(' ');
+  LCDprintChar(dtostrf(f_latitude, 1, 4, buffer));  
+  
+  LCDprintChar("Lon.: ");  
+  LCDprint(c_lon);
+  LCDprint(' ');
+  LCDprintChar(dtostrf(f_longitude, 1, 4, buffer));  
+
+  LCDsetLine(4);
+  String time = "20" + String(idate[0]) + "-" + String(idate[1]) + "-" + String(idate[2]) + " "
+    + String(itime[0]) + ":" + String(itime[1]) + ":" + String(itime[2]);
+  time.toCharArray(line1, time.length());
+  LCDprintChar(line1);    
+
+  LCDsetLine(6);  
+  strcpy_P(line1,PSTR("     Sat.:"));
+  LCDprintChar(line1);  
+  String sat = String(i_satellites);
+  time.toCharArray(line1, sat.length());
+  LCDprintChar(line1);    
+  
+  LCDprintChar("   ELE.:");  
+  LCDprintChar(dtostrf(f_Height, 1, 4, buffer));  
+  LCDprintChar(" "); 
+  
+  LCDcrlf();
 }
 
 void __drawABT( void * p )
