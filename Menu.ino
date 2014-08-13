@@ -42,7 +42,7 @@ PROGMEM const void * const main_menu_ptr_table [] = {
   &main_item03,
   &main_item04,
 };
-#define MAINMENUMAX (sizeof(main_menu_ptr_table) - 1)
+#define MAINMENUMAX (sizeof(main_menu_ptr_table)/2)
 // -----------
 
 extern page_desc_t __ACM_ARM;
@@ -66,7 +66,7 @@ PROGMEM const void * const acm_menu_ptr_table [] = {
   &acm_item03,
   &acm_item04,
 };
-#define ACMMENUMAX (sizeof(acm_menu_ptr_table) - 1)
+#define ACMMENUMAX (sizeof(acm_menu_ptr_table)/2)
 
 // -----------
 const char PROGMEM cfg_menu_item01 [] = "GPS Read";
@@ -86,7 +86,7 @@ PROGMEM const void * const cfg_menu_ptr_table [] = {
   &cfg_item02,
   &cfg_item03,
 };
-#define CFGMENUMAX (sizeof(cfg_menu_ptr_table) - 1)
+#define CFGMENUMAX (sizeof(cfg_menu_ptr_table)/2)
 
 // -----------
 static menu_item_desc_t gps_item01 = { &__drawGPS, 0, &__MAIN, 0 };
@@ -232,7 +232,7 @@ uint8_t last_key_code = KEY_NONE;
 struct page_desc_t * currentPage = 0;
 void updateMenu() 
 {
-  if ( uiKeyCode != KEY_NONE && last_key_code == uiKeyCode ) 
+  if ( uiKeyCode == KEY_NONE || last_key_code == uiKeyCode ) 
   {
     return;
   }
