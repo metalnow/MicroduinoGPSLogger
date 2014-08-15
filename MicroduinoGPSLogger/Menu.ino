@@ -154,101 +154,76 @@ page_desc_t __ACM_TAKEOFF = {&acm_takeoff_menu_ptr_table[0], 0, 1, 1};
 page_desc_t __ACM_FOLLOW  = {&acm_follow_menu_ptr_table[0], 0, 2, 1};
 page_desc_t __ACM_RTL     = {&acm_rtl_menu_ptr_table[0], 0, 3, 1};
 // ************************************************************************************************************
+void test()
+{
+  Serial.print("sizeof main_menu_ptr_table: ");
+  Serial.println(sizeof(main_menu_ptr_table));
+  Serial.print("sizeof acm_menu_ptr_table: ");
+  Serial.println(sizeof(acm_menu_ptr_table));
+  Serial.print("sizeof cfg_menu_ptr_table: ");
+  Serial.println(sizeof(cfg_menu_ptr_table));
+  
+}
+
+// ************************************************************************************************************
 void __drawGPS( void * p )
 {
-  char buffer[5];
-
-  LCDclear();
-  LCDsetLine(1);
-  LCDprintChar("Speed:");
-  if ( STA )
-  {
-    String speed = String(i_Speed[1]) + "." + String(i_Speed[0]);
-    speed.toCharArray(line1, speed.length());
-    LCDprintChar(line1);    
-  }
-  else
-    LCDprintChar("N/A");
-    
-  LCDsetLine(2);
-  LCDprintChar("Lat.: ");  
-  LCDprint(c_lat);
-  LCDprint(' ');
-  LCDprintChar(dtostrf(f_latitude, 1, 4, buffer));  
-  
-  LCDprintChar("Lon.: ");  
-  LCDprint(c_lon);
-  LCDprint(' ');
-  LCDprintChar(dtostrf(f_longitude, 1, 4, buffer));  
-
-  LCDsetLine(4);
-  String time = "20" + String(idate[0]) + "-" + String(idate[1]) + "-" + String(idate[2]) + " "
-    + String(itime[0]) + ":" + String(itime[1]) + ":" + String(itime[2]);
-  time.toCharArray(line1, time.length());
-  LCDprintChar(line1);    
-
-  LCDsetLine(6);  
-  strcpy_P(line1,PSTR("     Sat.:"));
-  LCDprintChar(line1);  
-  String sat = String(i_satellites);
-  time.toCharArray(line1, sat.length());
-  LCDprintChar(line1);    
-  
-  LCDprintChar("   ELE.:");  
-  LCDprintChar(dtostrf(f_Height, 1, 4, buffer));  
-  LCDprintChar(" "); 
-  
-  LCDcrlf();
+    Serial.println("draw gps");  
 }
 
 void __drawABT( void * p )
 {
+      Serial.println("draw abt");  
 }
 
 void __drawArm( void * p )
 {
+    Serial.println("draw arm");  
 }
 
 void __drawTakeoff( void * p )
 {
+    Serial.println("draw takeoff");  
 }
 
 void __drawFollow( void * p )
 {
+    Serial.println("draw follow");  
 }
 
 void __drawRtl( void * p )
 {
+    Serial.println("draw rtl");
 }
 
 void __handleCfgGPS(void *)
 {
-  b_read_gps = !b_read_gps;
+  Serial.println("handle cfg gps");
 }
 
 void __handleCfgSdcard(void * )
 {
-  b_write_sdcard = !b_write_sdcard;
+  Serial.println("handle cfg sdcard");
 }
 
 void __handleCfgDebug(void * )
 {
-  b_debug_serail = !b_debug_serail;
+  Serial.println("handle cfg debug");
 }
 
 void __drawCfgGPS( void *)
 {  
-  line2[6] = b_read_gps ? 'O' : 'X';
+  Serial.println("CFGGPS");
 }
 
 void __drawCfgSdcard(void * )
 {
-  line2[6] = b_write_sdcard ? 'O' : 'X';
+  Serial.println("CFGSdcard");
 }
 
 void __drawCfgDebug(void * )
 {
-  line2[6] = b_debug_serail ? 'O' : 'X';
+  Serial.println("CFGDebug");
 }
 
 // ************************************************************************************************************
@@ -275,9 +250,9 @@ void updateMenu()
         break;
       case KEY_UP:
         if ( menu_current <= 0 )
-          menu_current = currentPage->total;
+          menu_current = currentPage->total-1;
         else
-          menu_current--;
+          menu_current--;      
         break;
       case KEY_PREV:
       {
@@ -295,11 +270,13 @@ void updateMenu()
         const menu_item_desc_t* const item  = *(currentPage->data+menu_current);
         if ( item->attr )
         {
+          Serial.println("do attr");
           item_attr_t * handle = (item_attr_t*)item->attr;
           handle->attrFmt(0);
         }
         else if ( item->forward )
         {
+          Serial.println("move to next");
           currentPage = (page_desc_t *)item->forward;
           menu_current = 0;
         }
@@ -317,41 +294,48 @@ void updateMenu()
 
 void _drawMenu()
 {
-  LCDclear();
+  Serial.println("drawMenu");
   
   for (uint8_t i = 0; i < currentPage->total; i++)
   {
     const menu_item_desc_t* const item  = *(currentPage->data+i);
-    const char * const str_table = *(currentPage->str_table+i);    
+
+    const char * const str_table = *(currentPage->str_table+i);
+//    Serial.println(&str_table[0]);
+       
     strcpy_P(line1,PSTR("          "));
     strcpy(line2,line1);
     strcpy(line1, &str_table[0]);
     
-    LCDsetLine(i+1);
-    
-    if ( i == menu_current )  LCDattributesReverse();
-    LCDprintChar(line1); // the label
+    if ( i == menu_current )  Serial.print(">  ");
+    Serial.print(line1); // the label
     if ( item->attr )
     {
         item_attr_t * handle = (item_attr_t*)item->attr;
         handle->drawFmt(0);
     }
-    LCDprintChar(line2); // the value
-    if ( i == menu_current )  LCDattributesOff();
+    Serial.print(line2);
+    if ( i == menu_current )  Serial.print("  <");
+    Serial.println();
     
-    LCD_FLUSH;
   }
-  LCDcrlf();  
 }
 
 void refreshScreen()
 {
-  if ( currentPage->total == 1 )
-  {
-    const menu_item_desc_t* const item  = *(currentPage->data);
-    if ( item->fmt )
-      item->fmt( 0 );
+  if ( currentPage > 0 )
+  {  
+    Serial.print("has page: ");
+    Serial.println(currentPage->total);
+    
+    if ( currentPage->total == 1 )
+    {
+      const menu_item_desc_t* const item  = *(currentPage->data);
+      if ( item->fmt )
+        item->fmt( 0 );
+    }
+    else 
+      _drawMenu();
   }
-  else 
-    _drawMenu();
 }
+

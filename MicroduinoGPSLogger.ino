@@ -74,7 +74,7 @@ void loop()
   }  
    
   read_mavlink();
-  //loopLCD();
+  loopLCD();
   timer.Run();
 }
 
