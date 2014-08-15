@@ -15,38 +15,24 @@
 #define KEY_PREV   KEY_LEFT
 #define KEY_NEXT   KEY_RIGHT
 
-#define STAGE_NONE 0
-#define STAGE_INIT 1
-#define STAGE_MENU 2
-#define STAGE_GPS  3  // 
-#define STAGE_CFG  4  // config
-#define STAGE_ACM  5  // amp control
-#define STAGE_ABT  6  // about
-#define STAGE_QUESTION  7  // about
-#define STAGE_MAIN_TOTAL STAGE_QUESTION
-#define STAGE_ACM_FOLLOW STAGE_MAIN_TOTAL+1  // acm follow me
-#define STAGE_ACM_STATUS STAGE_ACM_FOLLOW+1
-
-#define MENU_ITEMS 4
-#define MENU_GPS  0 
-#define MENU_ACM  1 
-#define MENU_CFG  2 
-#define MENU_ABT  3 
-
-#define MENU_ACM_ITEMS 4
-#define MENU_ACM_ARM      0 
-#define MENU_ACM_TAKEOFF  1 
-#define MENU_ACM_FOLLOW   2 
-#define MENU_ACM_RTL      3 
-
-#define MENU_CFG_ITEMS 3
-#define MENU_CFG_GPS      0 
-#define MENU_CFG_SDCARD   1 
-#define MENU_CFG_SERIAL   2 
-
-#define MENU_QUESTION_ITEMS 2
-#define MENU_QUESTION_NO    0 
-#define MENU_QUESTION_YES   1 
+// Auto Pilot modes
+// ----------------
+#define STABILIZE 0                     // hold level position
+#define ACRO 1                          // rate control
+#define ALT_HOLD 2                      // AUTO control
+#define AUTO 3                          // AUTO control
+#define GUIDED 4                        // AUTO control
+#define LOITER 5                        // Hold a single location
+#define RTL 6                           // AUTO control
+#define CIRCLE 7                        // AUTO control
+#define LAND 9                          // AUTO control
+#define OF_LOITER 10                    // Hold a single location using optical flow sensor
+#define DRIFT 11                        // DRIFT mode (Note: 12 is no longer used)
+#define SPORT 13                        // earth frame rate control
+#define FLIP        14                  // flip the vehicle on the roll axis
+#define AUTOTUNE    15                  // autotune the vehicle's roll and pitch gains
+#define POSHOLD     16                  // position hold with manual override
+#define NUM_MODES   17
 
 
 #define SSD1306_128_64
@@ -110,5 +96,7 @@
 #define SSD1306_LEFT_HORIZONTAL_SCROLL 0x27
 #define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
 #define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL 0x2A
+
+typedef void (*acm_func_ptr)(void *);
 
 #endif

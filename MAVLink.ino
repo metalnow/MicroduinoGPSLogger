@@ -12,6 +12,117 @@ static uint8_t crlf_count = 0;
 static int packet_drops = 0;
 static int parse_error = 0;
 
+void DoArmDisarm( bool arm )
+{
+  SetMode(STABILIZE);
+  SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, motor_armed ? 0.0f : 1.0f );
+}
+
+void DoFlyHere( double lat, double lon, double alt )
+{
+  SetMode(GUIDED);
+  SendNavCommand( MAV_CMD_NAV_WAYPOINT, 2, 0, lat, lon, alt );
+}
+
+void DoTakeoff()
+{
+  SendNavCommand( MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 5 /*meters*/ );
+  SendNavCommand( MAV_CMD_NAV_LOITER_UNLIM, 0, 1, 0, 0, 0 /*meters*/ );
+  SendCommand( MAV_CMD_MISSION_START );
+  //SetMode(AUTO);
+}
+
+void DoLand()
+{
+  SendCommand( MAV_CMD_NAV_LAND );
+//  SendNavCommand( MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0 );
+//  SetMode(AUTO);
+}
+
+void DoRTL()
+{
+  SendCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH );
+//  SendNavCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0 );
+//  SetMode(AUTO);  
+}
+
+void DoLoiter()
+{
+  SetMode(LOITER);
+}
+
+// 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,10:OF_Loiter,11:Drift,13:Sport
+void SetMode( uint8_t fltMode )
+{
+  mavlink_set_mode_t mode;
+  
+  mode.target_system = sysid;
+  mode.base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
+  mode.custom_mode = fltMode;  
+  
+  mavlink_message_t msg;
+	mavlink_msg_set_mode_encode( 255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &mode);
+    
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
+  
+  Serial.write( packbuffer, len );
+}
+
+void SendCommand( uint16_t cmd, float p1, float p2, float p3, float p4, float p5, float p6, float p7, uint8_t confirmation )
+{
+  mavlink_command_long_t command;
+  memset(&command, 0, sizeof(command));
+  command.param1 = p1;
+  command.param2 = p2;
+  command.param3 = p3;
+  command.param4 = p4;
+  command.param5 = p5;
+  command.param6 = p6;
+  command.param7 = p7;
+  command.command = cmd;  // MAV_CMD
+  command.target_system = sysid;
+  command.target_component = compid;
+  command.confirmation = confirmation;
+  
+  if ( cmd == MAV_CMD_COMPONENT_ARM_DISARM )
+    command.target_component = MAV_COMP_ID_SYSTEM_CONTROL;
+    
+  mavlink_message_t msg;
+  mavlink_msg_command_long_encode( 255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &command);
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
+  Serial.write( packbuffer, len );
+}
+
+void SendNavCommand( uint16_t cmd, uint8_t current, uint8_t index, double lat, double lon, double alt, float p1, float p2, float p3, float p4 )
+{
+  mavlink_mission_item_t wp;
+  wp.target_system = sysid;
+  wp.target_component = compid; // MSG_NAMES.MISSION_ITEM
+
+  wp.command = cmd;
+
+  wp.current = current; // 0 = no , 2 = guided mode, 3 = change alt
+  wp.autocontinue = 1;
+
+  wp.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+  wp.y = lon;
+  wp.x = lat;
+  wp.z = alt;
+
+  wp.param1 = p1;
+  wp.param2 = p2;
+  wp.param3 = p3;
+  wp.param4 = p4;
+
+  wp.seq = index; // waypoint index at 0
+  
+  mavlink_message_t msg;
+  mavlink_msg_mission_item_encode(255/*sysid*/, MAV_COMP_ID_MISSIONPLANNER/*compid*/, &msg, &wp);
+  uint16_t len = mavlink_msg_to_send_buffer(packbuffer, &msg);
+  
+  Serial.write( packbuffer, len );
+}
+
 void request_mavlink_rates()
 {
   

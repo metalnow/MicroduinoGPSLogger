@@ -25,6 +25,7 @@
 #include "GPS_Vars.h"
 #include "MAVLink_Vars.h"
 #include "OLED_Vars.h"
+#include "Global_Vars.h"
 
 #define TELEMETRY_SPEED  57600  // How fast our MAVLink telemetry is coming to Serial port
 #define GPS_SPEED  38400 
@@ -34,7 +35,7 @@ FastSerialPort1(Serial1);
 
 GPS gps;
 
-SimpleTimer  timer;
+SimpleTimer  acm_timer;
 
 void setup()
 {
@@ -43,8 +44,6 @@ void setup()
   
   // setup mavlink port
   mavlink_comm_0_port = &Serial;  
-  
-  
 
   i2c_init();
   delay(100);
@@ -52,15 +51,17 @@ void setup()
   initLCD();
   
   // Startup MAVLink timers  
-  timer.Set(&OnTimer, 120);
-  timer.Enable();
+  acm_timer.Set(&OnACMTimer, 100);
+  acm_timer.Enable();
 }
 
 void loop()
 {
   gps_databegin();
-  gps_dataread();
-  gps_serial();
+  gps_dataread();    
+  
+  if ( b_debug_serail )
+    gps_serial();
   
   if(enable_mav_request == 1){//Request rate control
       for(int n = 0; n < 3; n++){
@@ -75,12 +76,13 @@ void loop()
    
   read_mavlink();
   loopLCD();
-  timer.Run();
+  acm_timer.Run();
 }
 
 
-void OnTimer()
+void OnACMTimer()
 {
-  
+  if ( acm_timer_fmt )
+    acm_timer_fmt(0);
 }
 

@@ -1,12 +1,20 @@
 typedef void (*menu_func_ptr)(void *);
 typedef void (*attr_func_ptr)(void *);
 typedef void (*attr_draw_func_ptr)(void *);
+typedef void (*timer_func_ptr)(void *);
+
+#define NULL_TIMER_FMT 0
+#define NULL_DRAW_FMT 0
+#define NULL_ATT_FMT 0
+#define NULL_MENU_FMT 0
+#define NULL_ATTR 0
 
 struct menu_item_desc_t {
   menu_func_ptr fmt;
   const void * forward;
   const void * backward;
   const void * attr;
+  timer_func_ptr timerFmt;
 };
 
 struct page_desc_t {
@@ -40,10 +48,10 @@ const char * main_string_table[] = 	   // change "string_table" name to suit
   main_menu_item04 
 };
 
-static menu_item_desc_t main_item01 = { 0, &__GPS, 0, 0 };
-static menu_item_desc_t main_item02 = { 0, &__ACM, 0, 0 };
-static menu_item_desc_t main_item03 = { 0, &__CFG, 0, 0 };
-static menu_item_desc_t main_item04 = { 0, &__ABT, 0, 0 };
+static menu_item_desc_t main_item01 = { NULL_MENU_FMT, &__GPS, 0, NULL_ATTR, NULL_TIMER_FMT };
+static menu_item_desc_t main_item02 = { NULL_MENU_FMT, &__ACM, 0, NULL_ATTR, NULL_TIMER_FMT };
+static menu_item_desc_t main_item03 = { NULL_MENU_FMT, &__CFG, 0, NULL_ATTR, NULL_TIMER_FMT };
+static menu_item_desc_t main_item04 = { NULL_MENU_FMT, &__ABT, 0, NULL_ATTR, NULL_TIMER_FMT };
 
 const menu_item_desc_t * const main_menu_ptr_table [] = {
   &main_item01,
@@ -72,10 +80,10 @@ const char * acm_string_table[] = 	   // change "string_table" name to suit
   acm_menu_item04 
 };
 
-static menu_item_desc_t acm_item01 = { 0, &__ACM_ARM, &__MAIN, 0 };
-static menu_item_desc_t acm_item02 = { 0, &__ACM_TAKEOFF, &__MAIN, 0 };
-static menu_item_desc_t acm_item03 = { 0, &__ACM_FOLLOW, &__MAIN, 0 };
-static menu_item_desc_t acm_item04 = { 0, &__ACM_RTL, &__MAIN, 0 };
+static menu_item_desc_t acm_item01 = { NULL_MENU_FMT, &__ACM_ARM,     &__MAIN, NULL_ATTR, NULL_TIMER_FMT };
+static menu_item_desc_t acm_item02 = { NULL_MENU_FMT, &__ACM_TAKEOFF, &__MAIN, NULL_ATTR, NULL_TIMER_FMT };
+static menu_item_desc_t acm_item03 = { NULL_MENU_FMT, &__ACM_FOLLOW,  &__MAIN, NULL_ATTR, NULL_TIMER_FMT };
+static menu_item_desc_t acm_item04 = { NULL_MENU_FMT, &__ACM_RTL,     &__MAIN, NULL_ATTR, NULL_TIMER_FMT };
 
 const menu_item_desc_t * const acm_menu_ptr_table [] = {
   &acm_item01,
@@ -101,9 +109,9 @@ static item_attr_t cfg_handle_item01 = { &__handleCfgGPS, &__drawCfgGPS };
 static item_attr_t cfg_handle_item02 = { &__handleCfgSdcard, &__drawCfgSdcard };
 static item_attr_t cfg_handle_item03 = { &__handleCfgDebug, &__drawCfgDebug };
 
-static menu_item_desc_t cfg_item01 = { 0, 0, &__MAIN, &cfg_handle_item01 };
-static menu_item_desc_t cfg_item02 = { 0, 0, &__MAIN, &cfg_handle_item02 };
-static menu_item_desc_t cfg_item03 = { 0, 0, &__MAIN, &cfg_handle_item03 };
+static menu_item_desc_t cfg_item01 = { NULL_MENU_FMT, 0, &__MAIN, &cfg_handle_item01, NULL_TIMER_FMT };
+static menu_item_desc_t cfg_item02 = { NULL_MENU_FMT, 0, &__MAIN, &cfg_handle_item02, NULL_TIMER_FMT };
+static menu_item_desc_t cfg_item03 = { NULL_MENU_FMT, 0, &__MAIN, &cfg_handle_item03, NULL_TIMER_FMT };
 
 const menu_item_desc_t * const cfg_menu_ptr_table [] = {
   &cfg_item01,
@@ -114,29 +122,29 @@ const menu_item_desc_t * const cfg_menu_ptr_table [] = {
 #define CFGMENUMAX (sizeof(cfg_menu_ptr_table)/2)
 
 // -----------
-static menu_item_desc_t gps_item01 = { &__drawGPS, 0, &__MAIN, 0 };
+static menu_item_desc_t gps_item01 = { &__drawGPS, 0, &__MAIN, NULL_ATTR, NULL_TIMER_FMT };
 const menu_item_desc_t * const gps_menu_ptr_table [] = {
   &gps_item01,
 };
 
-static menu_item_desc_t abt_item01 = { &__drawABT, 0, &__MAIN, 0 };
+static menu_item_desc_t abt_item01 = { &__drawABT, 0, &__MAIN, NULL_ATTR, NULL_TIMER_FMT };
 const menu_item_desc_t * const abt_menu_ptr_table [] = {
   &abt_item01,
 };
 
-static menu_item_desc_t acm_arm_item01 = { &__drawArm, 0, &__ACM, 0 };
+static menu_item_desc_t acm_arm_item01 = { &__drawArm, 0, &__ACM, NULL_ATTR, NULL_TIMER_FMT };
 const menu_item_desc_t * const acm_arm_menu_ptr_table [] = {
   &acm_arm_item01,
 };
-static menu_item_desc_t acm_takeoff_item01 = { &__drawTakeoff, 0, &__ACM, 0 };
+static menu_item_desc_t acm_takeoff_item01 = { &__drawTakeoff, 0, &__ACM, NULL_ATTR, NULL_TIMER_FMT };
 const menu_item_desc_t * const acm_takeoff_menu_ptr_table [] = {
   &acm_takeoff_item01,
 };
-static menu_item_desc_t acm_follow_item01 = { &__drawFollow, 0, &__ACM, 0 };
+static menu_item_desc_t acm_follow_item01 = { &__drawFollow, 0, &__ACM, NULL_ATTR, NULL_TIMER_FMT };
 const menu_item_desc_t * const acm_follow_menu_ptr_table [] = {
   &acm_follow_item01,
 };
-static menu_item_desc_t acm_rtl_item01 = { &__drawRtl, 0, &__ACM, 0 };
+static menu_item_desc_t acm_rtl_item01 = { &__drawRtl, 0, &__ACM, NULL_ATTR, NULL_TIMER_FMT };
 const menu_item_desc_t * const acm_rtl_menu_ptr_table [] = {
   &acm_rtl_item01,
 };
@@ -203,22 +211,35 @@ void __drawGPS( void * p )
 
 void __drawABT( void * p )
 {
+  LCDclear();
+  LCDsetLine(3);
+  LCDprintChar("=====================");    
+  LCDsetLine(4);
+  LCDprintChar("       Built by");
+  LCDsetLine(5);
+  LCDprintChar("      Shaune Jan");  
+  LCDsetLine(6);
+  LCDprintChar("=====================");    
 }
 
 void __drawArm( void * p )
 {
+  DoArmDisarm();
 }
 
 void __drawTakeoff( void * p )
 {
+  DoTakeoff();
 }
 
 void __drawFollow( void * p )
 {
+  DoFlyHere(f_latitude, f_longitude, followAltitude);
 }
 
 void __drawRtl( void * p )
 {
+  DoRTL();
 }
 
 void __handleCfgGPS(void *)
@@ -255,6 +276,40 @@ void __drawCfgDebug(void * )
 uint8_t menu_current = 0;
 uint8_t last_key_code = KEY_NONE;
 struct page_desc_t * currentPage = 0;
+void doKeyupHandle()
+{
+  if ( currentPage == &__ACM_FOLLOW )
+  {
+    followAltitude++;
+    if ( followAltitude > 30 )
+      followAltitude = 30;
+  }
+  else
+  {
+    if ( menu_current <= 0 )
+      menu_current = currentPage->total;
+    else
+      menu_current--;    
+  }
+  
+}
+
+void doKeydownHandle()
+{
+  if ( currentPage == &__ACM_FOLLOW )
+  {
+    followAltitude--;
+    if ( followAltitude < 5 )
+      followAltitude = 5;    
+  }
+  else
+  {
+    menu_current++;
+    if ( menu_current >= currentPage->total )
+      menu_current = 0;      
+  }
+}
+
 void updateMenu() 
 {
   if ( uiKeyCode == KEY_NONE || last_key_code == uiKeyCode ) 
@@ -269,15 +324,10 @@ void updateMenu()
     switch ( uiKeyCode ) 
     {
       case KEY_DOWN:
-        menu_current++;
-        if ( menu_current >= currentPage->total )
-          menu_current = 0;
+        doKeydownHandle();
         break;
       case KEY_UP:
-        if ( menu_current <= 0 )
-          menu_current = currentPage->total;
-        else
-          menu_current--;
+        doKeyupHandle();
         break;
       case KEY_PREV:
       {
