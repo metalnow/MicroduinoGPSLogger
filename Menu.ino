@@ -1,7 +1,6 @@
 typedef void (*menu_func_ptr)(void *);
 typedef void (*attr_func_ptr)(void *);
 typedef void (*attr_draw_func_ptr)(void *);
-typedef void (*timer_func_ptr)(void *);
 
 #define NULL_TIMER_FMT 0
 #define NULL_DRAW_FMT 0
@@ -183,7 +182,7 @@ void __drawGPS( void * p )
   LCDprint(c_lat);
   LCDprint(' ');
   LCDprintChar(dtostrf(f_latitude, 1, 4, buffer));  
-  
+  LCDsetLine(3);
   LCDprintChar("Lon.: ");  
   LCDprint(c_lon);
   LCDprint(' ');
@@ -196,7 +195,7 @@ void __drawGPS( void * p )
   LCDprintChar(line1);    
 
   LCDsetLine(6);  
-  strcpy_P(line1,PSTR("     Sat.:"));
+  strcpy_P(line1,PSTR("Sat.:"));
   LCDprintChar(line1);  
   String sat = String(i_satellites);
   time.toCharArray(line1, sat.length());
@@ -287,7 +286,7 @@ void doKeyupHandle()
   else
   {
     if ( menu_current <= 0 )
-      menu_current = currentPage->total;
+      menu_current = currentPage->total-1;
     else
       menu_current--;    
   }
@@ -396,6 +395,9 @@ void _drawMenu()
 
 void refreshScreen()
 {
+  if ( currentPage == 0 )
+    return;
+    
   if ( currentPage->total == 1 )
   {
     const menu_item_desc_t* const item  = *(currentPage->data);

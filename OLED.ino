@@ -375,7 +375,7 @@ void initLCD() {
   i2c_OLED_init();
   i2c_OLED_send_logo();
  
-  LCDsetLine(8); LCDprintChar("press any key to continue.");   
+  LCDsetLine(8); LCDprintChar("press any key.");   
 }
 
 void loopLCD() 

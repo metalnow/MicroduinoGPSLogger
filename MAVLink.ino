@@ -4,6 +4,7 @@
 #define ToRad(x) (x*0.01745329252)	// *pi/180
 #define ToDeg(x) (x*57.2957795131)	// *180/pi
 
+static uint8_t packbuffer[MAVLINK_MAX_PACKET_LEN];
 
 // true when we have received at least 1 MAVLink packet
 static bool mavlink_active;
@@ -12,36 +13,36 @@ static uint8_t crlf_count = 0;
 static int packet_drops = 0;
 static int parse_error = 0;
 
-void DoArmDisarm( bool arm )
+void DoArmDisarm( )
 {
   SetMode(STABILIZE);
-  SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, motor_armed ? 0.0f : 1.0f );
+  SendCommand(MAV_CMD_COMPONENT_ARM_DISARM, motor_armed ? 0.0f : 1.0f, 0, 0, 0, 0, 0, 0, 0 );
 }
 
 void DoFlyHere( double lat, double lon, double alt )
 {
   SetMode(GUIDED);
-  SendNavCommand( MAV_CMD_NAV_WAYPOINT, 2, 0, lat, lon, alt );
+  SendNavCommand( MAV_CMD_NAV_WAYPOINT, 2, 0, lat, lon, alt, 0, 0, 0, 0 );
 }
 
 void DoTakeoff()
 {
-  SendNavCommand( MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 5 /*meters*/ );
-  SendNavCommand( MAV_CMD_NAV_LOITER_UNLIM, 0, 1, 0, 0, 0 /*meters*/ );
-  SendCommand( MAV_CMD_MISSION_START );
+  SendNavCommand( MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 5 /*meters*/, 0, 0, 0, 0 );
+  SendNavCommand( MAV_CMD_NAV_LOITER_UNLIM, 0, 1, 0, 0, 0 /*meters*/, 0, 0, 0, 0 );
+  SendCommand( MAV_CMD_MISSION_START, 0, 0, 0, 0, 0, 0, 0, 0 );
   //SetMode(AUTO);
 }
 
 void DoLand()
 {
-  SendCommand( MAV_CMD_NAV_LAND );
+  SendCommand( MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0  );
 //  SendNavCommand( MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0 );
 //  SetMode(AUTO);
 }
 
 void DoRTL()
 {
-  SendCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH );
+  SendCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0 );
 //  SendNavCommand( MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0 );
 //  SetMode(AUTO);  
 }
@@ -56,7 +57,7 @@ void SetMode( uint8_t fltMode )
 {
   mavlink_set_mode_t mode;
   
-  mode.target_system = sysid;
+  mode.target_system = apm_mav_system;
   mode.base_mode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
   mode.custom_mode = fltMode;  
   
@@ -80,8 +81,8 @@ void SendCommand( uint16_t cmd, float p1, float p2, float p3, float p4, float p5
   command.param6 = p6;
   command.param7 = p7;
   command.command = cmd;  // MAV_CMD
-  command.target_system = sysid;
-  command.target_component = compid;
+  command.target_system = apm_mav_system;
+  command.target_component = apm_mav_component;
   command.confirmation = confirmation;
   
   if ( cmd == MAV_CMD_COMPONENT_ARM_DISARM )
@@ -96,8 +97,8 @@ void SendCommand( uint16_t cmd, float p1, float p2, float p3, float p4, float p5
 void SendNavCommand( uint16_t cmd, uint8_t current, uint8_t index, double lat, double lon, double alt, float p1, float p2, float p3, float p4 )
 {
   mavlink_mission_item_t wp;
-  wp.target_system = sysid;
-  wp.target_component = compid; // MSG_NAMES.MISSION_ITEM
+  wp.target_system = apm_mav_system;
+  wp.target_component = apm_mav_component; // MSG_NAMES.MISSION_ITEM
 
   wp.command = cmd;
 

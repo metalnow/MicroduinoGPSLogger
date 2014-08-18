@@ -2,6 +2,8 @@
 #define _GLOBAL_VARS_H
 
 static float followAltitude = 5;
-static void * acm_timer_fmt = 0;
+
+typedef void (*timer_func_ptr)(void *);
+static timer_func_ptr acm_timer_fmt = 0;
 
 #endif
