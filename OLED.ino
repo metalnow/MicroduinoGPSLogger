@@ -1,5 +1,7 @@
 #include <avr/pgmspace.h>
 
+uint8_t back_buf[128];
+
 // ************************************************************************************************************
 // LCD & display & monitoring
 // ************************************************************************************************************
@@ -336,12 +338,33 @@ void i2c_OLED_set_line(byte row) {   // goto the beginning of a single row, comp
       i2c_OLED_send_cmd(0x10);       //set high col address
 }
    
- void i2c_clear_OLED(void){
-    unsigned char i;
-    for(i=0;i<8;i++){
-       i2c_OLED_set_XY(0,i);
-       i2c_OLED_send_string(LINE_FILL_STRING);
-     }
+void i2c_clear_OLED(void)
+{
+  unsigned char i;
+  for(i=0;i<8;i++){
+     i2c_OLED_set_XY(0,i);
+     i2c_OLED_send_string(LINE_FILL_STRING);
+   }
+}
+
+void i2c_flush_OLED()
+{
+//  i2c_OLED_set_line(0);
+//  unsigned char i;
+//  for(i=0;i<128*64;++i)
+  {
+//    i2c_OLED_send_byte(back_buf[i]);
+  }
+  
+/*
+  uint8_t *ptr = (uint8_t *)b->buf;
+  uint8_t *end_ptr = ptr;
+  end_ptr += b->width;
+  do
+  {
+    *ptr++ = 0;
+  } while( ptr != end_ptr );
+*/  
 }
 
 /* ------------------------------------------------------------------ */

@@ -275,6 +275,13 @@ void __drawCfgDebug(void * )
 uint8_t menu_current = 0;
 uint8_t last_key_code = KEY_NONE;
 struct page_desc_t * currentPage = 0;
+
+void setCurrentPage( struct page_desc_t * page )
+{
+  LCDclear();
+  currentPage = page;
+}
+
 void doKeyupHandle()
 {
   if ( currentPage == &__ACM_FOLLOW )
@@ -334,7 +341,7 @@ void updateMenu()
         if ( item->backward )
         {
           menu_current = currentPage->index;
-          currentPage = (page_desc_t*)item->backward;
+          setCurrentPage((page_desc_t *)item->backward);          
         }
       }
         break;
@@ -349,7 +356,7 @@ void updateMenu()
         }
         else if ( item->forward )
         {
-          currentPage = (page_desc_t *)item->forward;
+          setCurrentPage((page_desc_t *)item->forward);
           menu_current = 0;
         }
       }
@@ -366,7 +373,7 @@ void updateMenu()
 
 void _drawMenu()
 {
-  LCDclear();
+  
   
   for (uint8_t i = 0; i < currentPage->total; i++)
   {
