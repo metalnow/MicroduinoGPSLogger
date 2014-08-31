@@ -54,4 +54,7 @@ static float        apm_windspeed = 0;
 static float        apm_windspeedz = 0;
 static float        apm_winddirection = 0;
 
+static bool         mavlink_active;
+
+
 

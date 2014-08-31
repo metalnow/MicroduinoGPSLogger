@@ -22,7 +22,7 @@ unsigned long time_key = millis();
 #define LT_UPPER_CODE 50
 #define RT_LOWER_CODE 85
 #define RT_UPPER_CODE 95
-#define UP_LOWER_CODE 195
+#define UP_LOWER_CODE 190
 #define UP_UPPER_CODE 205
 #define DN_LOWER_CODE 320
 #define DN_UPPER_CODE 330
@@ -82,7 +82,7 @@ void getCubeV1Key()
     delay(500);
     */
       
-    if ( uiKeyCodeSecond == uiKeyCodeFirst )
+    if ( uiKeyCodeSecond != uiKeyCodeFirst )
       uiKeyCode = uiKeyCodeFirst;
     else
       uiKeyCode = KEY_NONE;        

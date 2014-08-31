@@ -389,6 +389,11 @@ void LCDclear() {
   i2c_clear_OLED();
 }
 
+void LCDsetPosition(byte col, byte row)
+{
+  i2c_OLED_set_XY(col-1, row-1); 
+}
+
 void LCDsetLine(byte line) {  // Line = 1 or 2 - vt100 has lines 1-99
   i2c_OLED_set_line(line-1);   
 }

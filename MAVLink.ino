@@ -7,7 +7,6 @@
 static uint8_t packbuffer[MAVLINK_MAX_PACKET_LEN];
 
 // true when we have received at least 1 MAVLink packet
-static bool mavlink_active;
 static uint8_t crlf_count = 0;
 
 static int packet_drops = 0;

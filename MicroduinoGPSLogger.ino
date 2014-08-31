@@ -35,7 +35,7 @@ FastSerialPort1(Serial1);
 
 GPS gps;
 
-SimpleTimer  acm_timer;
+SimpleTimer  timer;
 
 void setup()
 {
@@ -51,8 +51,8 @@ void setup()
   initLCD();
   
   // Startup MAVLink timers  
-  acm_timer.Set(&OnACMTimer, 100);
-  acm_timer.Enable();
+  timer.Set(&OnTimer, 100);
+  timer.Enable();
 }
 
 void loop()
@@ -76,13 +76,13 @@ void loop()
    
   read_mavlink();
   loopLCD();
-  acm_timer.Run();
+  timer.Run();
 }
 
 
-void OnACMTimer()
+void OnTimer()
 {
-  if ( acm_timer_fmt )
-    acm_timer_fmt(0);
+  if ( timer_fmt )
+    timer_fmt(0);
 }
 
