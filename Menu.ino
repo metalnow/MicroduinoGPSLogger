@@ -298,6 +298,10 @@ void __drawACMInfo( void * p )
   
   strcpy_P(line1,PSTR("           "));  
   LCDprintChar(line1);
+  
+  // Leash GPS
+  LCDsetLine(5);
+  LCDprintChar("                     ");  
 }
 
 // draw acm menu in line 6~8
@@ -361,8 +365,17 @@ void __handleTakeoff( void * p )
 
 void __handleFollow( void * p )
 {
-  DoFlyHere(f_latitude, f_longitude, followAltitude);
-  __drawACMInfo(p);
+  if (STA)
+  {
+    DoFlyHere(f_latitude, f_longitude, followAltitude);
+    __drawACMInfo(p);
+  }
+  else
+  {
+    // Leash GPS
+    LCDsetLine(5);
+    LCDprintChar("==No Leash GPS Lock==");    
+  }
 }
 
 void __handleLoiter( void * p )

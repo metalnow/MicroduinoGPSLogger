@@ -34,7 +34,7 @@ void gps_dataread()
     f_fixquality=gps.fixquality;	//get signal quality
     STA=gps.fix;					//GPS status
 
-    //if (gps.fix)		// while GPS is online
+    if (gps.fix)		// while GPS is online
     {
       f_latitude=gps.latitude;
       f_longitude=gps.longitude;
