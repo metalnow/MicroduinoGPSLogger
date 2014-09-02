@@ -292,9 +292,9 @@ void __drawACMInfo( void * p )
   LCDsetLine(4);
   LCDprintChar("Bat.:");  
   LCDprintChar(dtostrf(vbat_A, 1, 4, line1));  
-  LCDprintChar(" v");
-  LCDprintChar(dtostrf(curr_A, 1, 4, line1));  
-  LCDprintChar(" A");  
+  LCDprintChar("v ");
+  LCDprintChar(dtostrf(curr_A, 1, 2, line1));  
+  LCDprintChar("A");  
   
   strcpy_P(line1,PSTR("           "));  
   LCDprintChar(line1);
